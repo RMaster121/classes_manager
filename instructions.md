@@ -22,6 +22,7 @@
 - Name
 - Assigned color
 - List of subjects
+- Location
 - List of classes
 
 ### Class

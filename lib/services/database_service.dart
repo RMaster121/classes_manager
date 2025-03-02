@@ -20,132 +20,191 @@ class DatabaseService {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(
+      path,
+      version: 3, // Increment version number
+      onCreate: _createDB,
+      onUpgrade: _onUpgrade,
+    );
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        'ALTER TABLE students ADD COLUMN location TEXT NOT NULL DEFAULT ""',
+      );
+    }
+    if (oldVersion < 3) {
+      await db.execute(
+        'ALTER TABLE students ADD COLUMN phone TEXT NOT NULL DEFAULT ""',
+      );
+    }
   }
 
   Future<void> _createDB(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE subjects (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        basePricePerHour REAL NOT NULL,
-        icon TEXT NOT NULL
-      )
-    ''');
-
-    await db.execute('''
       CREATE TABLE students (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
+        location TEXT NOT NULL,
+        phone TEXT NOT NULL,
         color INTEGER NOT NULL
       )
     ''');
 
     await db.execute('''
-      CREATE TABLE classes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        studentId INTEGER NOT NULL,
-        subjectId INTEGER NOT NULL,
-        dateTime TEXT NOT NULL,
-        duration REAL NOT NULL,
-        price REAL NOT NULL,
-        status INTEGER NOT NULL,
-        notes TEXT,
-        type INTEGER NOT NULL,
-        FOREIGN KEY (studentId) REFERENCES students (id),
-        FOREIGN KEY (subjectId) REFERENCES subjects (id)
+      CREATE TABLE subjects (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        pricePerHour REAL NOT NULL,
+        icon INTEGER NOT NULL
       )
     ''');
 
     await db.execute('''
-      CREATE TABLE student_subjects (
-        studentId INTEGER NOT NULL,
-        subjectId INTEGER NOT NULL,
-        PRIMARY KEY (studentId, subjectId),
-        FOREIGN KEY (studentId) REFERENCES students (id),
+      CREATE TABLE classes (
+        id TEXT PRIMARY KEY,
+        studentId TEXT NOT NULL,
+        subjectId TEXT NOT NULL,
+        dateTime TEXT NOT NULL,
+        FOREIGN KEY (studentId) REFERENCES students (id)
+          ON DELETE CASCADE,
         FOREIGN KEY (subjectId) REFERENCES subjects (id)
+          ON DELETE CASCADE
       )
     ''');
   }
 
-  // Subject operations
-  Future<Subject> createSubject(Subject subject) async {
-    final db = await database;
-    final id = await db.insert('subjects', subject.toMap());
-    return subject.copyWith(id: id);
+  // Student methods
+  Future<List<Student>> getStudents() async {
+    final db = await instance.database;
+    final result = await db.query('students');
+    return result.map((map) => Student.fromMap(map)).toList();
   }
 
-  Future<List<Subject>> getAllSubjects() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('subjects');
-    return List.generate(maps.length, (i) => Subject.fromMap(maps[i]));
+  Future<Student> getStudent(String id) async {
+    final db = await instance.database;
+    final maps = await db.query('students', where: 'id = ?', whereArgs: [id]);
+
+    if (maps.isNotEmpty) {
+      return Student.fromMap(maps.first);
+    } else {
+      throw Exception('Student not found');
+    }
   }
 
-  // Student operations
-  Future<Student> createStudent(Student student) async {
-    final db = await database;
-    final id = await db.insert('students', student.toMap());
-    return student.copyWith(id: id);
+  Future<void> addStudent(Student student) async {
+    final db = await instance.database;
+    await db.insert('students', student.toMap());
   }
 
-  Future<List<Student>> getAllStudents() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('students');
-    return List.generate(maps.length, (i) => Student.fromMap(maps[i]));
+  Future<void> updateStudent(Student student) async {
+    final db = await instance.database;
+    await db.update(
+      'students',
+      student.toMap(),
+      where: 'id = ?',
+      whereArgs: [student.id],
+    );
   }
 
-  // Class operations
-  Future<Class> createClass(Class classItem) async {
-    final db = await database;
-    final id = await db.insert('classes', classItem.toMap());
-    return classItem.copyWith(id: id);
+  Future<void> deleteStudent(String id) async {
+    final db = await instance.database;
+    await db.delete('students', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Subject methods
+  Future<List<Subject>> getSubjects() async {
+    final db = await instance.database;
+    final result = await db.query('subjects');
+    return result.map((map) => Subject.fromMap(map)).toList();
+  }
+
+  Future<Subject> getSubject(String id) async {
+    final db = await instance.database;
+    final maps = await db.query('subjects', where: 'id = ?', whereArgs: [id]);
+
+    if (maps.isNotEmpty) {
+      return Subject.fromMap(maps.first);
+    } else {
+      throw Exception('Subject not found');
+    }
+  }
+
+  Future<void> addSubject(Subject subject) async {
+    final db = await instance.database;
+    await db.insert('subjects', subject.toMap());
+  }
+
+  Future<void> updateSubject(Subject subject) async {
+    final db = await instance.database;
+    await db.update(
+      'subjects',
+      subject.toMap(),
+      where: 'id = ?',
+      whereArgs: [subject.id],
+    );
+  }
+
+  Future<void> deleteSubject(String id) async {
+    final db = await instance.database;
+    await db.delete('subjects', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Class methods
+  Future<List<Class>> getClasses() async {
+    final db = await instance.database;
+    final result = await db.query('classes');
+    return Future.wait(
+      result.map((map) async {
+        final student = await getStudent(map['studentId'] as String);
+        final subject = await getSubject(map['subjectId'] as String);
+        return Class.fromMap(map, student, subject);
+      }),
+    );
   }
 
   Future<List<Class>> getClassesForWeek(DateTime weekStart) async {
-    final db = await database;
+    final db = await instance.database;
     final weekEnd = weekStart.add(const Duration(days: 7));
 
-    final List<Map<String, dynamic>> maps = await db.query(
+    final result = await db.query(
       'classes',
       where: 'dateTime BETWEEN ? AND ?',
       whereArgs: [weekStart.toIso8601String(), weekEnd.toIso8601String()],
     );
 
-    List<Class> classes = [];
-    for (var map in maps) {
-      final student = await getStudentById(map['studentId'] as int);
-      final subject = await getSubjectById(map['subjectId'] as int);
-      if (student != null && subject != null) {
-        classes.add(Class.fromMap(map, student, subject));
-      }
-    }
-    return classes;
+    return Future.wait(
+      result.map((map) async {
+        final student = await getStudent(map['studentId'] as String);
+        final subject = await getSubject(map['subjectId'] as String);
+        return Class.fromMap(map, student, subject);
+      }),
+    );
   }
 
-  Future<Student?> getStudentById(int id) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'students',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-    if (maps.isEmpty) return null;
-    return Student.fromMap(maps.first);
+  Future<void> addClass(Class classItem) async {
+    final db = await instance.database;
+    await db.insert('classes', classItem.toMap());
   }
 
-  Future<Subject?> getSubjectById(int id) async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'subjects',
+  Future<void> updateClass(Class classItem) async {
+    final db = await instance.database;
+    await db.update(
+      'classes',
+      classItem.toMap(),
       where: 'id = ?',
-      whereArgs: [id],
+      whereArgs: [classItem.id],
     );
-    if (maps.isEmpty) return null;
-    return Subject.fromMap(maps.first);
+  }
+
+  Future<void> deleteClass(String id) async {
+    final db = await instance.database;
+    await db.delete('classes', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> close() async {
-    final db = await database;
+    final db = await instance.database;
     db.close();
   }
 }

@@ -3,6 +3,8 @@ import '../models/class.dart';
 import '../models/student.dart';
 import '../models/subject.dart';
 import '../services/database_service.dart';
+import 'students_screen.dart';
+import 'subjects_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,6 +34,20 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _navigateToStudents() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const StudentsScreen()),
+    ).then((_) => _loadWeeklyClasses()); // Reload classes when returning
+  }
+
+  void _navigateToSubjects() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SubjectsScreen()),
+    ).then((_) => _loadWeeklyClasses()); // Reload classes when returning
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,15 +62,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.person),
-            onPressed: () {
-              // TODO: Navigate to students list
-            },
+            onPressed: _navigateToStudents,
+            tooltip: 'Manage Students',
           ),
           IconButton(
             icon: const Icon(Icons.book),
-            onPressed: () {
-              // TODO: Navigate to subjects list
-            },
+            onPressed: _navigateToSubjects,
+            tooltip: 'Manage Subjects',
           ),
         ],
       ),
