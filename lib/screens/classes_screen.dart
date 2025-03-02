@@ -121,24 +121,27 @@ class _ClassesScreenState extends State<ClassesScreen> {
   }) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(cancelFuture ? 'Cancel All Future Classes?' : 'Cancel Class?'),
-        content: Text(
-          cancelFuture
-              ? 'This will cancel all future occurrences of this class. This action cannot be undone.'
-              : 'Are you sure you want to cancel this class?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              cancelFuture ? 'Cancel All Future Classes?' : 'Cancel Class?',
+            ),
+            content: Text(
+              cancelFuture
+                  ? 'This will cancel all future occurrences of this class. This action cannot be undone.'
+                  : 'Are you sure you want to cancel this class?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('No'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Yes'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Yes'),
-          ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
