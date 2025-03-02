@@ -257,39 +257,104 @@ class _StudentsScreenState extends State<StudentsScreen> {
   Widget _buildStudentTile(Student student) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: student.color,
-          child: Text(
-            student.name[0],
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-        title: Text(student.name),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [Text(student.location), Text(student.phone)],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
           children: [
-            IconButton(
-              icon: const Icon(Icons.sms, color: Colors.green),
-              tooltip: 'Send SMS',
-              onPressed: () => _sendSMS(student.phone),
+            // Leading - Avatar
+            CircleAvatar(
+              backgroundColor: student.color,
+              child: Text(
+                student.name[0],
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.phone, color: Colors.blue),
-              tooltip: 'Make call',
-              onPressed: () => _makePhoneCall(student.phone),
+            const SizedBox(width: 16),
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    student.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 14),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          student.location,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.phone, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        student.phone,
+                        style: const TextStyle(fontFamily: 'monospace'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.edit),
-              tooltip: 'Edit student',
-              onPressed: () => _showStudentDialog(student),
+            const SizedBox(width: 8),
+            // Action Buttons
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildActionButton(
+                  Icons.sms,
+                  Colors.green,
+                  () => _sendSMS(student.phone),
+                  'Send SMS',
+                ),
+                const SizedBox(width: 8),
+                _buildActionButton(
+                  Icons.phone,
+                  Colors.blue,
+                  () => _makePhoneCall(student.phone),
+                  'Make call',
+                ),
+                const SizedBox(width: 8),
+                _buildActionButton(
+                  Icons.edit,
+                  null,
+                  () => _showStudentDialog(student),
+                  'Edit student',
+                ),
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+    IconData icon,
+    Color? color,
+    VoidCallback onPressed,
+    String tooltip,
+  ) {
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: IconButton(
+        icon: Icon(icon, size: 24, color: color),
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        tooltip: tooltip,
+        onPressed: onPressed,
       ),
     );
   }
