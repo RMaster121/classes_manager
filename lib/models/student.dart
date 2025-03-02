@@ -46,7 +46,7 @@ class Student {
       name: json['name'] as String,
       location: json['location'] as String,
       phone: json['phone'] as String,
-      color: Color(json['color'] as int),
+      color: Color(int.parse(json['color'] as String)),
     );
   }
 

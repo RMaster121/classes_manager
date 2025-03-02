@@ -124,6 +124,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     final newSubject = Subject(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
                       name: _nameController.text,
                       basePricePerHour: double.parse(_priceController.text),
                       icon: _selectedIcon,

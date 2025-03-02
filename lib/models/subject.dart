@@ -8,7 +8,7 @@ class SubjectFields {
 }
 
 class Subject {
-  final int? id;
+  final String? id;
   final String name;
   final double basePricePerHour;
   final String icon;
@@ -31,7 +31,7 @@ class Subject {
 
   factory Subject.fromJson(Map<String, dynamic> json) {
     return Subject(
-      id: json['id'] as int?,
+      id: json['id']?.toString(),
       name: json['name'] as String,
       basePricePerHour: json['basePricePerHour'] as double,
       icon: json['icon'] as String,
@@ -39,7 +39,7 @@ class Subject {
   }
 
   Subject copyWith({
-    int? id,
+    String? id,
     String? name,
     double? basePricePerHour,
     String? icon,

@@ -26,23 +26,46 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 3, // Increment version number
+      version: 4, // Increment version number
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute(
-        'ALTER TABLE students ADD COLUMN location TEXT NOT NULL DEFAULT ""',
-      );
-    }
-    if (oldVersion < 3) {
-      await db.execute(
-        'ALTER TABLE students ADD COLUMN phone TEXT NOT NULL DEFAULT ""',
-      );
-    }
+    await db.transaction((txn) async {
+      if (oldVersion < 2) {
+        await txn.execute(
+          'ALTER TABLE students ADD COLUMN location TEXT NOT NULL DEFAULT ""',
+        );
+      }
+      if (oldVersion < 3) {
+        await txn.execute(
+          'ALTER TABLE students ADD COLUMN phone TEXT NOT NULL DEFAULT ""',
+        );
+      }
+      if (oldVersion < 4) {
+        // Create temporary table
+        await txn.execute('''
+CREATE TABLE ${tableSubjects}_temp (
+  ${SubjectFields.id} TEXT PRIMARY KEY,
+  ${SubjectFields.name} TEXT NOT NULL,
+  ${SubjectFields.basePricePerHour} REAL NOT NULL,
+  ${SubjectFields.icon} TEXT NOT NULL
+)''');
+
+        // Copy data with converted IDs
+        await txn.execute(
+          'INSERT INTO ${tableSubjects}_temp SELECT CAST(id AS TEXT) as id, name, basePricePerHour, icon FROM $tableSubjects',
+        );
+
+        // Drop old table and rename new one
+        await txn.execute('DROP TABLE $tableSubjects');
+        await txn.execute(
+          'ALTER TABLE ${tableSubjects}_temp RENAME TO $tableSubjects',
+        );
+      }
+    });
   }
 
   Future<void> _createDB(Database db, int version) async {
