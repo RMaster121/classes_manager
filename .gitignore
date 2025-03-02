@@ -40,6 +40,15 @@ migrate_working_dir/
 **/android/gradlew.bat
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.*
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+**/android/key.properties
+**/android/.settings
+**/android/.project
+**/android/app/.classpath
+**/android/app/.project
+**/android/app/.settings
 
 # iOS/XCode related
 **/ios/**/*.mode1v3
@@ -70,15 +79,47 @@ migrate_working_dir/
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
 
-# macOS
+# Windows related
+**/windows/flutter/generated_plugin_registrant.cc
+**/windows/flutter/generated_plugin_registrant.h
+**/windows/flutter/generated_plugins.cmake
+**/windows/out/
+**/windows/.vs/
+**/windows/runner/Debug/
+**/windows/runner/Release/
+**/windows/runner/Profile/
+
+# macOS related
 **/macos/Flutter/GeneratedPluginRegistrant.*
 **/macos/Flutter/ephemeral
+**/macos/Pods/
+**/macos/Runner/Debug/
+**/macos/Runner/Release/
+**/macos/Runner/Profile/
+**/macos/Runner.xcworkspace/
+**/macos/*.mode1v3
+**/macos/*.mode2v3
+**/macos/*.pbxuser
+**/macos/*.perspectivev3
+**/macos/*.xcworkspace/
+**/macos/xcuserdata/
 
-# Windows
-**/windows/flutter/generated_plugin_registrant.*
+# Linux related
+**/linux/flutter/generated_plugin_registrant.cc
+**/linux/flutter/generated_plugin_registrant.h
+**/linux/flutter/generated_plugins.cmake
+**/linux/build/
+**/linux/.generated_flutter_root
+**/linux/flutter/ephemeral/
 
-# Linux
-**/linux/flutter/generated_plugin_registrant.*
+# Development tools
+.devtools/
+.fvm/
+.mason/
+.metadata
+.env*
+*.env
+*.env.*
 
 # Coverage
 coverage/
@@ -86,6 +127,7 @@ coverage/
 
 # Symbols
 app.*.symbols
+app.*.map.json
 
 # Exceptions to above rules.
 !**/ios/**/default.mode1v3
