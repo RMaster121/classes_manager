@@ -315,6 +315,94 @@ CREATE TABLE $tableClasses (
     );
   }
 
+  Future<void> cancelFutureClasses(
+    String studentId,
+    String subjectId,
+    DateTime fromDate,
+  ) async {
+    final db = await instance.database;
+    await db.update(
+      tableClasses,
+      {ClassFields.status: ClassStatus.cancelled.toString().split('.').last},
+      where: '''
+        ${ClassFields.studentId} = ? AND 
+        ${ClassFields.subjectId} = ? AND 
+        ${ClassFields.dateTime} >= ?
+      ''',
+      whereArgs: [studentId, subjectId, fromDate.toIso8601String()],
+    );
+  }
+
+  Future<List<Class>> getFutureClasses(
+    String studentId,
+    String subjectId,
+    DateTime fromDate,
+  ) async {
+    final db = await instance.database;
+    final result = await db.rawQuery(
+      '''
+      SELECT 
+        c.${ClassFields.id} as c_id,
+        c.${ClassFields.studentId} as c_studentId,
+        c.${ClassFields.subjectId} as c_subjectId,
+        c.${ClassFields.dateTime} as c_dateTime,
+        c.${ClassFields.duration} as c_duration,
+        c.${ClassFields.status} as c_status,
+        c.${ClassFields.notes} as c_notes,
+        c.${ClassFields.type} as c_type,
+        s.${StudentFields.id} as s_id,
+        s.${StudentFields.name} as s_name,
+        s.${StudentFields.location} as s_location,
+        s.${StudentFields.phone} as s_phone,
+        s.${StudentFields.color} as s_color,
+        sub.${SubjectFields.id} as sub_id,
+        sub.${SubjectFields.name} as sub_name,
+        sub.${SubjectFields.basePricePerHour} as sub_basePricePerHour,
+        sub.${SubjectFields.icon} as sub_icon
+      FROM $tableClasses c
+      JOIN $tableStudents s ON c.${ClassFields.studentId} = s.${StudentFields.id}
+      JOIN $tableSubjects sub ON c.${ClassFields.subjectId} = sub.${SubjectFields.id}
+      WHERE c.${ClassFields.studentId} = ? 
+      AND c.${ClassFields.subjectId} = ?
+      AND c.${ClassFields.dateTime} >= ?
+      ORDER BY c.${ClassFields.dateTime} ASC
+    ''',
+      [studentId, subjectId, fromDate.toIso8601String()],
+    );
+
+    return result.map((json) {
+      final student = Student.fromJson({
+        'id': json['s_id'],
+        'name': json['s_name'],
+        'location': json['s_location'],
+        'phone': json['s_phone'],
+        'color': json['s_color'],
+      });
+
+      final subject = Subject.fromJson({
+        'id': json['sub_id'],
+        'name': json['sub_name'],
+        'basePricePerHour': json['sub_basePricePerHour'],
+        'icon': json['sub_icon'],
+      });
+
+      return Class.fromJson(
+        {
+          ClassFields.id: json['c_id'],
+          ClassFields.studentId: json['c_studentId'],
+          ClassFields.subjectId: json['c_subjectId'],
+          ClassFields.dateTime: json['c_dateTime'],
+          ClassFields.duration: json['c_duration'],
+          ClassFields.status: json['c_status'],
+          ClassFields.notes: json['c_notes'],
+          ClassFields.type: json['c_type'],
+        },
+        student: student,
+        subject: subject,
+      );
+    }).toList();
+  }
+
   Future<void> close() async {
     final db = await instance.database;
     db.close();
