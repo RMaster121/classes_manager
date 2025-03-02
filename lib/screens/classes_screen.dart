@@ -289,18 +289,36 @@ class _ClassesScreenState extends State<ClassesScreen> {
       _selectedTime.minute,
     );
 
-    final newClass = Class(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      student: _selectedStudent!,
-      subject: _selectedSubject!,
-      dateTime: dateTime,
-      duration: _duration,
-      status: _status,
-      notes: _notesController.text.isEmpty ? null : _notesController.text,
-      type: _type,
-    );
+    // For recurring classes, create instances for the next 8 weeks
+    if (_type == ClassType.recurring) {
+      for (int i = 0; i < 8; i++) {
+        final classDateTime = dateTime.add(Duration(days: 7 * i));
+        final newClass = Class(
+          id: '${DateTime.now().millisecondsSinceEpoch}_$i',
+          student: _selectedStudent!,
+          subject: _selectedSubject!,
+          dateTime: classDateTime,
+          duration: _duration,
+          status: _status,
+          notes: _notesController.text.isEmpty ? null : _notesController.text,
+          type: _type,
+        );
+        await DatabaseService.instance.addClass(newClass);
+      }
+    } else {
+      final newClass = Class(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        student: _selectedStudent!,
+        subject: _selectedSubject!,
+        dateTime: dateTime,
+        duration: _duration,
+        status: _status,
+        notes: _notesController.text.isEmpty ? null : _notesController.text,
+        type: _type,
+      );
+      await DatabaseService.instance.addClass(newClass);
+    }
 
-    await DatabaseService.instance.addClass(newClass);
     await _loadData();
     if (mounted) {
       Navigator.pop(context);
@@ -318,12 +336,33 @@ class _ClassesScreenState extends State<ClassesScreen> {
         child: Row(
           children: [
             // Leading avatar
-            CircleAvatar(
-              backgroundColor: classItem.student.color,
-              child: Text(
-                classItem.student.name[0],
-                style: const TextStyle(color: Colors.white),
-              ),
+            Stack(
+              children: [
+                CircleAvatar(
+                  backgroundColor: classItem.student.color,
+                  child: Text(
+                    classItem.student.name[0],
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                if (classItem.type == ClassType.recurring)
+                  Positioned(
+                    right: -2,
+                    bottom: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.repeat,
+                        size: 12,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: 12),
             // Content
