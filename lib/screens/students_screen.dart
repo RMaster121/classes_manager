@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/student.dart';
 import '../services/database_service.dart';
 
@@ -178,7 +179,8 @@ class _StudentsScreenState extends State<StudentsScreen> {
                                                 backgroundColor: color,
                                                 radius: 16,
                                                 child:
-                                                    _selectedColor.value == color.value
+                                                    _selectedColor.value ==
+                                                            color.value
                                                         ? const Icon(
                                                           Icons.check,
                                                           color: Colors.white,
@@ -224,6 +226,20 @@ class _StudentsScreenState extends State<StudentsScreen> {
     );
   }
 
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    }
+  }
+
+  Future<void> _sendSMS(String phoneNumber) async {
+    final Uri launchUri = Uri(scheme: 'sms', path: phoneNumber);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -249,10 +265,29 @@ class _StudentsScreenState extends State<StudentsScreen> {
                         ),
                       ),
                       title: Text(student.name),
-                      subtitle: Text(student.location),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _showStudentDialog(student),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [Text(student.location), Text(student.phone)],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.sms, color: Colors.green),
+                            tooltip: 'Send SMS',
+                            onPressed: () => _sendSMS(student.phone),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.phone, color: Colors.blue),
+                            tooltip: 'Make call',
+                            onPressed: () => _makePhoneCall(student.phone),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            tooltip: 'Edit student',
+                            onPressed: () => _showStudentDialog(student),
+                          ),
+                        ],
                       ),
                     ),
                   );
