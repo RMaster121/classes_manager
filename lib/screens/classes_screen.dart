@@ -309,40 +309,118 @@ class _ClassesScreenState extends State<ClassesScreen> {
   }
 
   Widget _buildClassTile(Class classItem) {
+    final dateFormat = DateFormat('EEE, MMM d');
     final timeFormat = DateFormat('HH:mm');
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: classItem.student.color,
-          child: Text(
-            classItem.student.name[0],
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-        title: Text(classItem.student.name),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
           children: [
-            Text(classItem.subject.name),
-            Text(
-              '${timeFormat.format(classItem.dateTime)} - ${classItem.duration}h',
+            // Leading avatar
+            CircleAvatar(
+              backgroundColor: classItem.student.color,
+              child: Text(
+                classItem.student.name[0],
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '\$${(classItem.subject.basePricePerHour * classItem.duration).toStringAsFixed(2)}',
-              style: Theme.of(context).textTheme.titleMedium,
+            const SizedBox(width: 12),
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person_outline,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          classItem.student.name,
+                          style: Theme.of(context).textTheme.titleMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${dateFormat.format(classItem.dateTime)} at ${timeFormat.format(classItem.dateTime)}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.book_outlined,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          classItem.subject.name,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${classItem.duration}h',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
             const SizedBox(width: 16),
-            IconButton(
-              icon: const Icon(Icons.more_vert),
-              onPressed: () {
-                // TODO: Show class options menu
-              },
+            // Price and menu
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '\$${(classItem.subject.basePricePerHour * classItem.duration).toStringAsFixed(2)}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {
+                    // TODO: Show class options menu
+                  },
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
             ),
           ],
         ),
