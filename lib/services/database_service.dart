@@ -207,9 +207,12 @@ CREATE TABLE $tableClasses (
     );
   }
 
-  Future<List<Class>> getClassesForWeek(DateTime weekStart) async {
+  Future<List<Class>> getClassesForWeeks(
+    DateTime startDate,
+    int numberOfWeeks,
+  ) async {
     final db = await instance.database;
-    final weekEnd = weekStart.add(const Duration(days: 7));
+    final endDate = startDate.add(Duration(days: 7 * numberOfWeeks));
 
     final result = await db.rawQuery(
       '''
@@ -237,7 +240,7 @@ CREATE TABLE $tableClasses (
       WHERE c.${ClassFields.dateTime} BETWEEN ? AND ?
       ORDER BY c.${ClassFields.dateTime} ASC
     ''',
-      [weekStart.toIso8601String(), weekEnd.toIso8601String()],
+      [startDate.toIso8601String(), endDate.toIso8601String()],
     );
 
     return result.map((json) {

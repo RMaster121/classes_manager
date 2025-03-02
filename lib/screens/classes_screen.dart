@@ -18,6 +18,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
   List<Subject> subjects = [];
   DateTime selectedDate = DateTime.now();
   final _formKey = GlobalKey<FormState>();
+  bool _showingAllClasses = false;
 
   // Controllers
   final _notesController = TextEditingController();
@@ -44,8 +45,16 @@ class _ClassesScreenState extends State<ClassesScreen> {
   Future<void> _loadData() async {
     final loadedStudents = await DatabaseService.instance.getStudents();
     final loadedSubjects = await DatabaseService.instance.getSubjects();
-    final loadedClasses = await DatabaseService.instance.getClassesForWeek(
-      DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1)),
+
+    // Get the start of the current week
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+
+    final loadedClasses = await DatabaseService.instance.getClassesForWeeks(
+      startOfWeek,
+      _showingAllClasses
+          ? 52
+          : 2, // Show 2 weeks by default, or full year when showing all
     );
 
     setState(() {
@@ -53,6 +62,13 @@ class _ClassesScreenState extends State<ClassesScreen> {
       subjects = loadedSubjects;
       classes = loadedClasses;
     });
+  }
+
+  void _toggleShowAllClasses() {
+    setState(() {
+      _showingAllClasses = !_showingAllClasses;
+    });
+    _loadData();
   }
 
   void _showClassOptionsMenu(BuildContext context, Class classItem) {
@@ -925,10 +941,37 @@ class _ClassesScreenState extends State<ClassesScreen> {
       body:
           classes.isEmpty
               ? const Center(child: Text('No classes scheduled'))
-              : ListView.builder(
-                itemCount: classes.length,
-                itemBuilder:
-                    (context, index) => _buildClassTile(classes[index]),
+              : Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount:
+                          classes.length + 1, // +1 for the "See More" button
+                      itemBuilder: (context, index) {
+                        if (index < classes.length) {
+                          return _buildClassTile(classes[index]);
+                        } else {
+                          return Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Center(
+                              child: TextButton.icon(
+                                onPressed: _toggleShowAllClasses,
+                                icon: Icon(
+                                  _showingAllClasses
+                                      ? Icons.expand_less
+                                      : Icons.expand_more,
+                                ),
+                                label: Text(
+                                  _showingAllClasses ? 'Show Less' : 'See More',
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddClassDialog,
