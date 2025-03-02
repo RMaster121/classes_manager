@@ -213,7 +213,24 @@ CREATE TABLE $tableClasses (
 
     final result = await db.rawQuery(
       '''
-      SELECT c.*, s.*, sub.*
+      SELECT 
+        c.${ClassFields.id} as c_id,
+        c.${ClassFields.studentId} as c_studentId,
+        c.${ClassFields.subjectId} as c_subjectId,
+        c.${ClassFields.dateTime} as c_dateTime,
+        c.${ClassFields.duration} as c_duration,
+        c.${ClassFields.status} as c_status,
+        c.${ClassFields.notes} as c_notes,
+        c.${ClassFields.type} as c_type,
+        s.${StudentFields.id} as s_id,
+        s.${StudentFields.name} as s_name,
+        s.${StudentFields.location} as s_location,
+        s.${StudentFields.phone} as s_phone,
+        s.${StudentFields.color} as s_color,
+        sub.${SubjectFields.id} as sub_id,
+        sub.${SubjectFields.name} as sub_name,
+        sub.${SubjectFields.basePricePerHour} as sub_basePricePerHour,
+        sub.${SubjectFields.icon} as sub_icon
       FROM $tableClasses c
       JOIN $tableStudents s ON c.${ClassFields.studentId} = s.${StudentFields.id}
       JOIN $tableSubjects sub ON c.${ClassFields.subjectId} = sub.${SubjectFields.id}
@@ -225,30 +242,30 @@ CREATE TABLE $tableClasses (
 
     return result.map((json) {
       final student = Student.fromJson({
-        'id': json[StudentFields.id],
-        'name': json[StudentFields.name],
-        'location': json[StudentFields.location],
-        'phone': json[StudentFields.phone],
-        'color': json[StudentFields.color],
+        'id': json['s_id'],
+        'name': json['s_name'],
+        'location': json['s_location'],
+        'phone': json['s_phone'],
+        'color': json['s_color'],
       });
 
       final subject = Subject.fromJson({
-        'id': json[SubjectFields.id],
-        'name': json[SubjectFields.name],
-        'basePricePerHour': json[SubjectFields.basePricePerHour],
-        'icon': json[SubjectFields.icon],
+        'id': json['sub_id'],
+        'name': json['sub_name'],
+        'basePricePerHour': json['sub_basePricePerHour'],
+        'icon': json['sub_icon'],
       });
 
       return Class.fromJson(
         {
-          ClassFields.id: json[ClassFields.id],
-          ClassFields.studentId: json[ClassFields.studentId],
-          ClassFields.subjectId: json[ClassFields.subjectId],
-          ClassFields.dateTime: json[ClassFields.dateTime],
-          ClassFields.duration: json[ClassFields.duration],
-          ClassFields.status: json[ClassFields.status],
-          ClassFields.notes: json[ClassFields.notes],
-          ClassFields.type: json[ClassFields.type],
+          ClassFields.id: json['c_id'],
+          ClassFields.studentId: json['c_studentId'],
+          ClassFields.subjectId: json['c_subjectId'],
+          ClassFields.dateTime: json['c_dateTime'],
+          ClassFields.duration: json['c_duration'],
+          ClassFields.status: json['c_status'],
+          ClassFields.notes: json['c_notes'],
+          ClassFields.type: json['c_type'],
         },
         student: student,
         subject: subject,
