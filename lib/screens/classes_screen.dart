@@ -194,30 +194,37 @@ class _ClassesScreenState extends State<ClassesScreen> {
                             // Class Type Selection
                             Row(
                               children: [
-                                const Text('Type:'),
-                                const SizedBox(width: 16),
-                                ChoiceChip(
-                                  label: const Text('One-time'),
-                                  selected: _type == ClassType.oneTime,
-                                  onSelected: (selected) {
-                                    if (selected) {
-                                      setDialogState(
-                                        () => _type = ClassType.oneTime,
-                                      );
-                                    }
-                                  },
+                                Text(
+                                  'Type:',
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
-                                const SizedBox(width: 8),
-                                ChoiceChip(
-                                  label: const Text('Recurring'),
-                                  selected: _type == ClassType.recurring,
-                                  onSelected: (selected) {
-                                    if (selected) {
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: SegmentedButton<ClassType>(
+                                    segments: const [
+                                      ButtonSegment<ClassType>(
+                                        value: ClassType.oneTime,
+                                        icon: Icon(Icons.event),
+                                        label: Text('Single'),
+                                      ),
+                                      ButtonSegment<ClassType>(
+                                        value: ClassType.recurring,
+                                        icon: Icon(Icons.repeat),
+                                        label: Text('Weekly'),
+                                      ),
+                                    ],
+                                    selected: {_type},
+                                    onSelectionChanged: (
+                                      Set<ClassType> selected,
+                                    ) {
                                       setDialogState(
-                                        () => _type = ClassType.recurring,
+                                        () => _type = selected.first,
                                       );
-                                    }
-                                  },
+                                    },
+                                    style: ButtonStyle(
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
