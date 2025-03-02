@@ -142,3 +142,5 @@ app.*.map.json
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+devtools_options.yaml
+android/build/reports/configuration-cache/2v7mwdodw7jzojzaqk14u2m7o/4mfno0wdsqphb37o8hsawd06f/configuration-cache-report.html
