@@ -209,8 +209,9 @@ CREATE TABLE $tableClasses (
 
   Future<List<Class>> getClassesForWeeks(
     DateTime startDate,
-    int numberOfWeeks,
-  ) async {
+    int numberOfWeeks, {
+    bool loadPastClasses = false,
+  }) async {
     final db = await instance.database;
     final endDate = startDate.add(Duration(days: 7 * numberOfWeeks));
 
@@ -237,10 +238,20 @@ CREATE TABLE $tableClasses (
       FROM $tableClasses c
       JOIN $tableStudents s ON c.${ClassFields.studentId} = s.${StudentFields.id}
       JOIN $tableSubjects sub ON c.${ClassFields.subjectId} = sub.${SubjectFields.id}
-      WHERE c.${ClassFields.dateTime} BETWEEN ? AND ?
+      WHERE ${loadPastClasses ? 'c.${ClassFields.dateTime} < ? AND c.${ClassFields.status} = ?' : '(c.${ClassFields.dateTime} >= ? OR (c.${ClassFields.dateTime} < ? AND c.${ClassFields.status} != ?))'}
       ORDER BY c.${ClassFields.dateTime} ASC
+      LIMIT 50
     ''',
-      [startDate.toIso8601String(), endDate.toIso8601String()],
+      loadPastClasses
+          ? [
+            startDate.toIso8601String(),
+            ClassStatus.completed.toString().split('.').last,
+          ]
+          : [
+            startDate.toIso8601String(),
+            startDate.toIso8601String(),
+            ClassStatus.completed.toString().split('.').last,
+          ],
     );
 
     return result.map((json) {
@@ -404,6 +415,18 @@ CREATE TABLE $tableClasses (
         subject: subject,
       );
     }).toList();
+  }
+
+  Future<void> markClassAsCompleted(String? classId) async {
+    if (classId == null) return;
+
+    final db = await instance.database;
+    await db.update(
+      tableClasses,
+      {ClassFields.status: ClassStatus.completed.toString().split('.').last},
+      where: '${ClassFields.id} = ?',
+      whereArgs: [classId],
+    );
   }
 
   Future<void> close() async {

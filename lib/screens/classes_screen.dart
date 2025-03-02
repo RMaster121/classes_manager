@@ -14,11 +14,15 @@ class ClassesScreen extends StatefulWidget {
 
 class _ClassesScreenState extends State<ClassesScreen> {
   List<Class> classes = [];
+  List<Class> pastClasses = [];
   List<Student> students = [];
   List<Subject> subjects = [];
   DateTime selectedDate = DateTime.now();
   final _formKey = GlobalKey<FormState>();
   bool _showingAllClasses = false;
+  bool _loadingPastClasses = false;
+  final ScrollController _scrollController = ScrollController();
+  bool _canLoadPastClasses = true;
 
   // Controllers
   final _notesController = TextEditingController();
@@ -34,12 +38,49 @@ class _ClassesScreenState extends State<ClassesScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    // Only trigger when user deliberately pulls down at the top
+    if (_scrollController.position.pixels < -50 &&
+        !_loadingPastClasses &&
+        _canLoadPastClasses) {
+      _loadPastClasses();
+      // Prevent multiple triggers until next reset
+      _canLoadPastClasses = false;
+    }
+
+    // Reset the ability to load past classes when user scrolls back down
+    if (_scrollController.position.pixels > 0) {
+      _canLoadPastClasses = true;
+    }
+  }
+
+  Future<void> _loadPastClasses() async {
+    if (_loadingPastClasses) return;
+
+    setState(() {
+      _loadingPastClasses = true;
+    });
+
+    final loadedPastClasses = await DatabaseService.instance.getClassesForWeeks(
+      DateTime.now(),
+      52, // Load up to a year of past classes
+      loadPastClasses: true,
+    );
+
+    setState(() {
+      pastClasses = loadedPastClasses;
+      _loadingPastClasses = false;
+    });
   }
 
   Future<void> _loadData() async {
@@ -52,15 +93,17 @@ class _ClassesScreenState extends State<ClassesScreen> {
 
     final loadedClasses = await DatabaseService.instance.getClassesForWeeks(
       startOfWeek,
-      _showingAllClasses
-          ? 52
-          : 2, // Show 2 weeks by default, or full year when showing all
+      _showingAllClasses ? 52 : 2,
+      loadPastClasses: false, // Only load future and non-completed classes
     );
 
     setState(() {
       students = loadedStudents;
       subjects = loadedSubjects;
       classes = loadedClasses;
+      if (!_loadingPastClasses) {
+        pastClasses = []; // Reset past classes when loading new data
+      }
     });
   }
 
@@ -93,6 +136,18 @@ class _ClassesScreenState extends State<ClassesScreen> {
                   onTap: () {
                     Navigator.pop(context);
                     _showEditClassDialog(classItem, editFuture: true);
+                  },
+                ),
+              if (classItem.status != ClassStatus.completed)
+                ListTile(
+                  leading: const Icon(Icons.check_circle),
+                  title: const Text('Mark as completed'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await DatabaseService.instance.markClassAsCompleted(
+                      classItem.id,
+                    );
+                    await _loadData();
                   },
                 ),
               ListTile(
@@ -767,20 +822,29 @@ class _ClassesScreenState extends State<ClassesScreen> {
   Widget _buildClassTile(Class classItem) {
     final dateFormat = DateFormat('EEE, d MMM');
     final timeFormat = DateFormat('HH:mm');
+    final now = DateTime.now();
+    final isPast = classItem.dateTime.isBefore(now);
+    final isCompleted = classItem.status == ClassStatus.completed;
+    final shouldFade = isPast || isCompleted;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
-            // Leading avatar
+            // Leading avatar with status indicator
             Stack(
               children: [
                 CircleAvatar(
-                  backgroundColor: classItem.student.color,
+                  backgroundColor: classItem.student.color.withOpacity(
+                    shouldFade ? 0.6 : 1.0,
+                  ),
                   child: Text(
                     classItem.student.name[0],
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(shouldFade ? 0.8 : 1.0),
+                    ),
                   ),
                 ),
                 if (classItem.type == ClassType.recurring)
@@ -790,11 +854,29 @@ class _ClassesScreenState extends State<ClassesScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
+                        color: Theme.of(context).colorScheme.primary
+                            .withOpacity(shouldFade ? 0.6 : 1.0),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         Icons.repeat,
+                        size: 12,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
+                if (isCompleted)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.check_circle,
                         size: 12,
                         color: Theme.of(context).colorScheme.onPrimary,
                       ),
@@ -815,13 +897,19 @@ class _ClassesScreenState extends State<ClassesScreen> {
                         child: Icon(
                           Icons.person_outline,
                           size: 16,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: Theme.of(context).colorScheme.primary
+                              .withOpacity(shouldFade ? 0.6 : 1.0),
                         ),
                       ),
                       Expanded(
                         child: Text(
                           classItem.student.name,
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface
+                                .withOpacity(shouldFade ? 0.6 : 1.0),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -836,7 +924,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
                         child: Icon(
                           Icons.calendar_today,
                           size: 14,
-                          color: Theme.of(context).colorScheme.secondary,
+                          color: Theme.of(context).colorScheme.secondary
+                              .withOpacity(shouldFade ? 0.6 : 1.0),
                         ),
                       ),
                       Expanded(
@@ -846,7 +935,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
                           style: Theme.of(
                             context,
                           ).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.secondary,
+                            color: Theme.of(context).colorScheme.secondary
+                                .withOpacity(shouldFade ? 0.6 : 1.0),
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -854,7 +944,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
                       Text(
                         '•',
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.secondary,
+                          color: Theme.of(context).colorScheme.secondary
+                              .withOpacity(shouldFade ? 0.6 : 1.0),
                           fontSize: 8,
                         ),
                       ),
@@ -866,7 +957,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
                           style: Theme.of(
                             context,
                           ).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.secondary,
+                            color: Theme.of(context).colorScheme.secondary
+                                .withOpacity(shouldFade ? 0.6 : 1.0),
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
@@ -881,7 +973,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
                         child: Icon(
                           Icons.book_outlined,
                           size: 16,
-                          color: Theme.of(context).colorScheme.secondary,
+                          color: Theme.of(context).colorScheme.secondary
+                              .withOpacity(shouldFade ? 0.6 : 1.0),
                         ),
                       ),
                       Expanded(
@@ -890,7 +983,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
                           style: Theme.of(
                             context,
                           ).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.secondary,
+                            color: Theme.of(context).colorScheme.secondary
+                                .withOpacity(shouldFade ? 0.6 : 1.0),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -900,6 +994,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
                       Text(
                         '${classItem.duration}h',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface
+                              .withOpacity(shouldFade ? 0.6 : 1.0),
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
@@ -916,12 +1012,20 @@ class _ClassesScreenState extends State<ClassesScreen> {
                 Text(
                   '\$${(classItem.subject.basePricePerHour * classItem.duration).toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(shouldFade ? 0.6 : 1.0),
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
                 const SizedBox(width: 4),
                 IconButton(
-                  icon: const Icon(Icons.more_vert),
+                  icon: Icon(
+                    Icons.more_vert,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(shouldFade ? 0.6 : 1.0),
+                  ),
                   onPressed: () => _showClassOptionsMenu(context, classItem),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -937,41 +1041,96 @@ class _ClassesScreenState extends State<ClassesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Only show past completed classes from pastClasses list
+    final filteredPastClasses =
+        pastClasses
+            .where(
+              (c) =>
+                  c.dateTime.isBefore(DateTime.now()) &&
+                  c.status == ClassStatus.completed,
+            )
+            .toList()
+          ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
+    // Only show non-completed classes and future classes from the regular list
+    final filteredClasses =
+        classes
+            .where(
+              (c) =>
+                  c.dateTime.isAfter(DateTime.now()) ||
+                  c.status != ClassStatus.completed,
+            )
+            .toList()
+          ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
+    final allClasses = [...filteredPastClasses, ...filteredClasses];
+
+    // If not showing all classes, limit to next 2 weeks
+    if (!_showingAllClasses) {
+      final twoWeeksFromNow = DateTime.now().add(const Duration(days: 14));
+      allClasses.removeWhere((c) => c.dateTime.isAfter(twoWeeksFromNow));
+    }
+
     return Scaffold(
       body:
-          classes.isEmpty
+          allClasses.isEmpty
               ? const Center(child: Text('No classes scheduled'))
-              : Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount:
-                          classes.length + 1, // +1 for the "See More" button
-                      itemBuilder: (context, index) {
-                        if (index < classes.length) {
-                          return _buildClassTile(classes[index]);
-                        } else {
-                          return Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Center(
-                              child: TextButton.icon(
-                                onPressed: _toggleShowAllClasses,
-                                icon: Icon(
-                                  _showingAllClasses
-                                      ? Icons.expand_less
-                                      : Icons.expand_more,
-                                ),
-                                label: Text(
-                                  _showingAllClasses ? 'Show Less' : 'See More',
+              : RefreshIndicator(
+                onRefresh: () async {
+                  if (!_loadingPastClasses) {
+                    await _loadPastClasses();
+                  }
+                },
+                child: Column(
+                  children: [
+                    if (_loadingPastClasses)
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: LinearProgressIndicator(),
+                      ),
+                    if (pastClasses.isEmpty && !_loadingPastClasses)
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          'Pull down to load past classes',
+                          style: Theme.of(context).textTheme.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount:
+                            allClasses.length + (_showingAllClasses ? 0 : 1),
+                        itemBuilder: (context, index) {
+                          if (index < allClasses.length) {
+                            return _buildClassTile(allClasses[index]);
+                          } else {
+                            return Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Center(
+                                child: TextButton.icon(
+                                  onPressed: _toggleShowAllClasses,
+                                  icon: Icon(
+                                    _showingAllClasses
+                                        ? Icons.expand_less
+                                        : Icons.expand_more,
+                                  ),
+                                  label: Text(
+                                    _showingAllClasses
+                                        ? 'Show Less'
+                                        : 'See More',
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        }
-                      },
+                            );
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddClassDialog,
