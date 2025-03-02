@@ -84,11 +84,16 @@ class _StudentsScreenState extends State<StudentsScreen> {
   }
 
   void _showStudentDialog([Student? student]) {
+    // Store initial color value
+    Color initialColor = student?.color ?? Colors.blue;
+    _selectedColor = initialColor;
+
     if (student != null) {
       _nameController.text = student.name;
       _locationController.text = student.location;
       _phoneController.text = student.phone;
-      _selectedColor = student.color;
+    } else {
+      _resetForm();
     }
 
     showDialog(
@@ -173,7 +178,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                                                 backgroundColor: color,
                                                 radius: 16,
                                                 child:
-                                                    _selectedColor == color
+                                                    _selectedColor.value == color.value
                                                         ? const Icon(
                                                           Icons.check,
                                                           color: Colors.white,
