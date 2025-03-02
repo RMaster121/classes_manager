@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 import 'subject.dart';
 import 'class.dart';
 
+class StudentFields {
+  static const String id = 'id';
+  static const String name = 'name';
+  static const String location = 'location';
+  static const String phone = 'phone';
+  static const String color = 'color';
+}
+
 class Student {
   final String id;
   final String name;
@@ -22,7 +30,7 @@ class Student {
   }) : subjects = subjects ?? [],
        classes = classes ?? [];
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
@@ -32,13 +40,13 @@ class Student {
     };
   }
 
-  factory Student.fromMap(Map<String, dynamic> map) {
+  factory Student.fromJson(Map<String, dynamic> json) {
     return Student(
-      id: map['id'].toString(),
-      name: map['name'] as String,
-      location: map['location'] as String,
-      phone: map['phone'] as String,
-      color: Color(map['color'] as int),
+      id: json['id'].toString(),
+      name: json['name'] as String,
+      location: json['location'] as String,
+      phone: json['phone'] as String,
+      color: Color(json['color'] as int),
     );
   }
 

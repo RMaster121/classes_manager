@@ -1,3 +1,12 @@
+import 'package:flutter/material.dart';
+
+class SubjectFields {
+  static const String id = 'id';
+  static const String name = 'name';
+  static const String basePricePerHour = 'basePricePerHour';
+  static const String icon = 'icon';
+}
+
 class Subject {
   final int? id;
   final String name;
@@ -11,7 +20,7 @@ class Subject {
     required this.icon,
   });
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
@@ -20,12 +29,12 @@ class Subject {
     };
   }
 
-  factory Subject.fromMap(Map<String, dynamic> map) {
+  factory Subject.fromJson(Map<String, dynamic> json) {
     return Subject(
-      id: map['id'] as int?,
-      name: map['name'] as String,
-      basePricePerHour: map['basePricePerHour'] as double,
-      icon: map['icon'] as String,
+      id: json['id'] as int?,
+      name: json['name'] as String,
+      basePricePerHour: json['basePricePerHour'] as double,
+      icon: json['icon'] as String,
     );
   }
 
