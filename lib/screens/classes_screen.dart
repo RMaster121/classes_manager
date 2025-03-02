@@ -346,17 +346,6 @@ class _ClassesScreenState extends State<ClassesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Classes'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () {
-              // TODO: Implement calendar view
-            },
-          ),
-        ],
-      ),
       body:
           classes.isEmpty
               ? const Center(child: Text('No classes scheduled'))

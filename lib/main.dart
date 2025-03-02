@@ -39,6 +39,9 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
+  static const String _appName = 'Classes Manager';
+  static const List<String> _screenTitles = ['Classes', 'Students', 'Subjects'];
+
   static const List<Widget> _screens = <Widget>[
     ClassesScreen(),
     StudentsScreen(),
@@ -54,6 +57,48 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        centerTitle: false,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _appName,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                Icon(
+                  _selectedIndex == 0
+                      ? Icons.calendar_today
+                      : _selectedIndex == 1
+                      ? Icons.people
+                      : Icons.book,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _screenTitles[_selectedIndex],
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        toolbarHeight: 72,
+        surfaceTintColor: Theme.of(context).colorScheme.background,
+        shadowColor: Colors.transparent,
+      ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,

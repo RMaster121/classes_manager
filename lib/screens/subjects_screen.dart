@@ -271,7 +271,6 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Subjects')),
       body:
           subjects.isEmpty
               ? const Center(child: Text('No subjects added yet'))

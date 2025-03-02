@@ -9,7 +9,18 @@ class AppTheme {
       brightness: Brightness.light,
     ),
     textTheme: GoogleFonts.robotoTextTheme(ThemeData.light().textTheme),
-    appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+    appBarTheme: AppBarTheme(
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: false,
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      titleTextStyle: GoogleFonts.roboto(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: Colors.blue.shade700,
+      ),
+    ),
     cardTheme: CardTheme(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -26,7 +37,18 @@ class AppTheme {
       brightness: Brightness.dark,
     ),
     textTheme: GoogleFonts.robotoTextTheme(ThemeData.dark().textTheme),
-    appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+    appBarTheme: AppBarTheme(
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      centerTitle: false,
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      titleTextStyle: GoogleFonts.roboto(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: Colors.blue.shade200,
+      ),
+    ),
     cardTheme: CardTheme(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

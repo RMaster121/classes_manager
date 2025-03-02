@@ -362,7 +362,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Students')),
       body:
           students.isEmpty
               ? const Center(child: Text('No students added yet'))
