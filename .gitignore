@@ -32,6 +32,13 @@ migrate_working_dir/
 *.g.dart
 *.freezed.dart
 
+# Generated plugin files
+**/generated_plugin_registrant.*
+**/generated_plugins.cmake
+**/GeneratedPluginRegistrant.*
+**/generated_plugin_registrant.cc
+**/generated_plugin_registrant.h
+
 # Android related
 **/android/**/gradle-wrapper.jar
 **/android/.gradle
