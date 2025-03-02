@@ -309,7 +309,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
   }
 
   Widget _buildClassTile(Class classItem) {
-    final dateFormat = DateFormat('EEE, MMM d');
+    final dateFormat = DateFormat('EEE, d MMM');
     final timeFormat = DateFormat('HH:mm');
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -333,12 +333,14 @@ class _ClassesScreenState extends State<ClassesScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.primary,
+                      SizedBox(
+                        width: 20,
+                        child: Icon(
+                          Icons.person_outline,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
-                      const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           classItem.student.name,
@@ -352,16 +354,44 @@ class _ClassesScreenState extends State<ClassesScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 14,
-                        color: Theme.of(context).colorScheme.secondary,
+                      SizedBox(
+                        width: 20,
+                        child: Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          dateFormat.format(classItem.dateTime),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        '•',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.secondary,
+                          fontSize: 8,
+                        ),
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        '${dateFormat.format(classItem.dateTime)} at ${timeFormat.format(classItem.dateTime)}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.secondary,
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          timeFormat.format(classItem.dateTime),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.secondary,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
                       ),
                     ],
@@ -369,12 +399,14 @@ class _ClassesScreenState extends State<ClassesScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(
-                        Icons.book_outlined,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.secondary,
+                      SizedBox(
+                        width: 20,
+                        child: Icon(
+                          Icons.book_outlined,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
                       ),
-                      const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           classItem.subject.name,
@@ -399,7 +431,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
                 ],
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 8),
             // Price and menu
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -410,7 +442,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 IconButton(
                   icon: const Icon(Icons.more_vert),
                   onPressed: () {
