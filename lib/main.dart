@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
+import 'utils/theme.dart';
+import 'screens/home_screen.dart';
+import 'services/database_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize database
+  await DatabaseService.instance.database;
+
   runApp(const MainApp());
 }
 
@@ -9,12 +17,12 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
-      ),
+    return MaterialApp(
+      title: 'Classes Manager',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      home: const HomeScreen(),
     );
   }
 }
