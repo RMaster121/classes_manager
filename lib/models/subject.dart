@@ -8,13 +8,13 @@ class SubjectFields {
 }
 
 class Subject {
-  final String? id;
+  final String id;
   final String name;
   final double basePricePerHour;
   final String icon;
 
   Subject({
-    this.id,
+    required this.id,
     required this.name,
     required this.basePricePerHour,
     required this.icon,
@@ -31,7 +31,7 @@ class Subject {
 
   factory Subject.fromJson(Map<String, dynamic> json) {
     return Subject(
-      id: json['id']?.toString(),
+      id: json['id'].toString(),
       name: json['name'] as String,
       basePricePerHour: json['basePricePerHour'] as double,
       icon: json['icon'] as String,
