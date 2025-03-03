@@ -557,6 +557,9 @@ class _ClassesScreenState extends State<ClassesScreen> {
     _type = classItem.type;
     _notesController.text = classItem.notes ?? '';
 
+    // For recurring classes, initialize with the current day of week
+    int _selectedDayOfWeek = classItem.dateTime.weekday;
+
     showDialog(
       context: context,
       builder:
@@ -623,54 +626,115 @@ class _ClassesScreenState extends State<ClassesScreen> {
                                           : null,
                             ),
                             const SizedBox(height: 16),
-                            // Date Selection
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextButton.icon(
-                                    icon: const Icon(Icons.calendar_today),
-                                    label: Text(
-                                      DateFormat(
-                                        'MMM dd, yyyy',
-                                      ).format(selectedDate),
+                            // Date/Time Selection
+                            if (!editFuture)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextButton.icon(
+                                      icon: const Icon(Icons.calendar_today),
+                                      label: Text(
+                                        DateFormat(
+                                          'MMM dd, yyyy',
+                                        ).format(selectedDate),
+                                      ),
+                                      onPressed: () async {
+                                        final date = await showDatePicker(
+                                          context: context,
+                                          initialDate: selectedDate,
+                                          firstDate: DateTime.now(),
+                                          lastDate: DateTime.now().add(
+                                            const Duration(days: 365),
+                                          ),
+                                        );
+                                        if (date != null) {
+                                          setDialogState(
+                                            () => selectedDate = date,
+                                          );
+                                        }
+                                      },
                                     ),
-                                    onPressed: () async {
-                                      final date = await showDatePicker(
-                                        context: context,
-                                        initialDate: selectedDate,
-                                        firstDate: DateTime.now(),
-                                        lastDate: DateTime.now().add(
-                                          const Duration(days: 365),
-                                        ),
-                                      );
-                                      if (date != null) {
-                                        setDialogState(
-                                          () => selectedDate = date,
-                                        );
-                                      }
-                                    },
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: TextButton.icon(
-                                    icon: const Icon(Icons.access_time),
-                                    label: Text(_selectedTime.format(context)),
-                                    onPressed: () async {
-                                      final time = await showTimePicker(
-                                        context: context,
-                                        initialTime: _selectedTime,
-                                      );
-                                      if (time != null) {
-                                        setDialogState(
-                                          () => _selectedTime = time,
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextButton.icon(
+                                      icon: const Icon(Icons.access_time),
+                                      label: Text(
+                                        _selectedTime.format(context),
+                                      ),
+                                      onPressed: () async {
+                                        final time = await showTimePicker(
+                                          context: context,
+                                          initialTime: _selectedTime,
                                         );
-                                      }
-                                    },
+                                        if (time != null) {
+                                          setDialogState(
+                                            () => _selectedTime = time,
+                                          );
+                                        }
+                                      },
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
+                            // Day of Week and Time Selection for future classes
+                            if (editFuture) ...[
+                              const Text(
+                                'Change schedule for all future classes:',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: DropdownButtonFormField<int>(
+                                      value: _selectedDayOfWeek,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Day of Week',
+                                      ),
+                                      items: [
+                                        for (int i = 1; i <= 7; i++)
+                                          DropdownMenuItem(
+                                            value: i,
+                                            child: Text(
+                                              DateFormat(
+                                                'EEEE',
+                                              ).format(DateTime(2024, 1, i)),
+                                            ),
+                                          ),
+                                      ],
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          setDialogState(
+                                            () => _selectedDayOfWeek = value,
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextButton.icon(
+                                      icon: const Icon(Icons.access_time),
+                                      label: Text(
+                                        _selectedTime.format(context),
+                                      ),
+                                      onPressed: () async {
+                                        final time = await showTimePicker(
+                                          context: context,
+                                          initialTime: _selectedTime,
+                                        );
+                                        if (time != null) {
+                                          setDialogState(
+                                            () => _selectedTime = time,
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                             const SizedBox(height: 16),
                             // Duration Slider
                             Row(
@@ -692,53 +756,56 @@ class _ClassesScreenState extends State<ClassesScreen> {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            // Status Selection
-                            Row(
-                              children: [
-                                Text(
-                                  'Status:',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: SegmentedButton<ClassStatus>(
-                                    segments: const [
-                                      ButtonSegment<ClassStatus>(
-                                        value: ClassStatus.planned,
-                                        icon: Icon(Icons.event),
-                                        label: Text('Planned'),
+                            // Status Selection - only show for single class edit
+                            if (!editFuture)
+                              Row(
+                                children: [
+                                  Text(
+                                    'Status:',
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: SegmentedButton<ClassStatus>(
+                                      segments: const [
+                                        ButtonSegment<ClassStatus>(
+                                          value: ClassStatus.planned,
+                                          icon: Icon(Icons.event),
+                                          label: Text('Planned'),
+                                        ),
+                                        ButtonSegment<ClassStatus>(
+                                          value: ClassStatus.completed,
+                                          icon: Icon(Icons.check_circle),
+                                          label: Text('Done'),
+                                        ),
+                                      ],
+                                      selected: {_status},
+                                      onSelectionChanged: (
+                                        Set<ClassStatus> selected,
+                                      ) {
+                                        setDialogState(
+                                          () => _status = selected.first,
+                                        );
+                                      },
+                                      style: ButtonStyle(
+                                        visualDensity: VisualDensity.compact,
                                       ),
-                                      ButtonSegment<ClassStatus>(
-                                        value: ClassStatus.completed,
-                                        icon: Icon(Icons.check_circle),
-                                        label: Text('Done'),
-                                      ),
-                                    ],
-                                    selected: {_status},
-                                    onSelectionChanged: (
-                                      Set<ClassStatus> selected,
-                                    ) {
-                                      setDialogState(
-                                        () => _status = selected.first,
-                                      );
-                                    },
-                                    style: ButtonStyle(
-                                      visualDensity: VisualDensity.compact,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // Notes
-                            TextFormField(
-                              controller: _notesController,
-                              decoration: const InputDecoration(
-                                labelText: 'Notes',
-                                alignLabelWithHint: true,
+                                ],
                               ),
-                              maxLines: 3,
-                            ),
+                            const SizedBox(height: 16),
+                            // Notes - only show for single class edit
+                            if (!editFuture)
+                              TextFormField(
+                                controller: _notesController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Notes',
+                                  alignLabelWithHint: true,
+                                ),
+                                maxLines: 3,
+                              ),
                             const SizedBox(height: 24),
                             // Actions
                             Row(
@@ -754,7 +821,11 @@ class _ClassesScreenState extends State<ClassesScreen> {
                                 const SizedBox(width: 8),
                                 FilledButton(
                                   onPressed:
-                                      () => _updateClass(classItem, editFuture),
+                                      () => _updateClass(
+                                        classItem,
+                                        editFuture,
+                                        editFuture ? _selectedDayOfWeek : null,
+                                      ),
                                   child: const Text('Save'),
                                 ),
                               ],
@@ -769,7 +840,11 @@ class _ClassesScreenState extends State<ClassesScreen> {
     );
   }
 
-  Future<void> _updateClass(Class classItem, bool editFuture) async {
+  Future<void> _updateClass(
+    Class classItem,
+    bool editFuture, [
+    int? newDayOfWeek,
+  ]) async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedStudent == null || _selectedSubject == null) {
@@ -788,18 +863,34 @@ class _ClassesScreenState extends State<ClassesScreen> {
       // Update all future classes
       final classes = await DatabaseService.instance.getFutureClasses(
         _selectedStudent!.id,
-        _selectedSubject!.id ??
-            DateTime.now().millisecondsSinceEpoch.toString(),
+        _selectedSubject!.id,
         classItem.dateTime,
       );
 
       for (final cls in classes) {
+        // Calculate the new date while preserving the week structure
+        DateTime newDateTime = cls.dateTime;
+        if (newDayOfWeek != null) {
+          // Calculate days to add/subtract to reach the target day of week
+          final currentDayOfWeek = cls.dateTime.weekday;
+          final daysToAdd = (newDayOfWeek - currentDayOfWeek) % 7;
+          newDateTime = cls.dateTime.add(Duration(days: daysToAdd));
+        }
+        // Apply the new time while keeping the calculated date
+        newDateTime = DateTime(
+          newDateTime.year,
+          newDateTime.month,
+          newDateTime.day,
+          _selectedTime.hour,
+          _selectedTime.minute,
+        );
+
         final updatedClass = cls.copyWith(
           student: _selectedStudent,
           subject: _selectedSubject,
           duration: _duration,
-          status: _status,
-          notes: _notesController.text.isEmpty ? null : _notesController.text,
+          dateTime: newDateTime,
+          // Don't update status and notes for future classes
         );
         await DatabaseService.instance.updateClass(updatedClass);
       }
