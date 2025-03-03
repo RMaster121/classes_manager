@@ -433,4 +433,9 @@ CREATE TABLE $tableClasses (
     final db = await instance.database;
     db.close();
   }
+
+  Future<void> deleteAllClasses() async {
+    final db = await instance.database;
+    await db.delete(tableClasses);
+  }
 }

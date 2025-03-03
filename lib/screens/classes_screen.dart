@@ -1052,13 +1052,14 @@ class _ClassesScreenState extends State<ClassesScreen> {
             .toList()
           ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
-    // Only show non-completed classes and future classes from the regular list
+    // Only show non-completed/non-cancelled classes and future classes from the regular list
     final filteredClasses =
         classes
             .where(
               (c) =>
-                  c.dateTime.isAfter(DateTime.now()) ||
-                  c.status != ClassStatus.completed,
+                  (c.dateTime.isAfter(DateTime.now()) ||
+                      c.status != ClassStatus.completed) &&
+                  c.status != ClassStatus.cancelled,
             )
             .toList()
           ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
@@ -1072,6 +1073,46 @@ class _ClassesScreenState extends State<ClassesScreen> {
     }
 
     return Scaffold(
+      appBar: AppBar(
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_forever),
+            color: Theme.of(context).colorScheme.error,
+            onPressed: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text('Delete All Classes'),
+                      content: const Text(
+                        'Are you sure you want to delete all classes? This action cannot be undone.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ButtonStyle(
+                            backgroundColor: MaterialStateProperty.all(
+                              Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                          child: const Text('Delete All'),
+                        ),
+                      ],
+                    ),
+              );
+
+              if (confirmed == true) {
+                await DatabaseService.instance.deleteAllClasses();
+                await _loadData();
+              }
+            },
+          ),
+        ],
+      ),
       body:
           allClasses.isEmpty
               ? const Center(child: Text('No classes scheduled'))
