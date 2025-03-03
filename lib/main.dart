@@ -4,6 +4,7 @@ import 'services/database_service.dart';
 import 'screens/students_screen.dart';
 import 'screens/subjects_screen.dart';
 import 'screens/classes_screen.dart';
+import 'screens/finance_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,12 +41,18 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   static const String _appName = 'Classes Manager';
-  static const List<String> _screenTitles = ['Classes', 'Students', 'Subjects'];
+  static const List<String> _screenTitles = [
+    'Classes',
+    'Students',
+    'Subjects',
+    'Finance',
+  ];
 
   static const List<Widget> _screens = <Widget>[
     ClassesScreen(),
     StudentsScreen(),
     SubjectsScreen(),
+    FinanceScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -77,7 +84,9 @@ class _MainScreenState extends State<MainScreen> {
                       ? Icons.calendar_today
                       : _selectedIndex == 1
                       ? Icons.people
-                      : Icons.book,
+                      : _selectedIndex == 2
+                      ? Icons.book
+                      : Icons.attach_money,
                   size: 16,
                   color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
                 ),
@@ -110,6 +119,10 @@ class _MainScreenState extends State<MainScreen> {
           ),
           NavigationDestination(icon: Icon(Icons.people), label: 'Students'),
           NavigationDestination(icon: Icon(Icons.book), label: 'Subjects'),
+          NavigationDestination(
+            icon: Icon(Icons.attach_money),
+            label: 'Finance',
+          ),
         ],
       ),
     );
