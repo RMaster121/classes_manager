@@ -150,21 +150,25 @@ class _ClassesScreenState extends State<ClassesScreen> {
                     await _loadData();
                   },
                 ),
-              ListTile(
-                leading: Icon(
-                  Icons.cancel,
-                  color: Theme.of(context).colorScheme.error,
+              if (classItem.status != ClassStatus.completed)
+                ListTile(
+                  leading: Icon(
+                    Icons.cancel,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  title: Text(
+                    'Cancel class',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    _showCancelClassDialog(classItem);
+                  },
                 ),
-                title: Text(
-                  'Cancel class',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-                onTap: () async {
-                  Navigator.pop(context);
-                  _showCancelClassDialog(classItem);
-                },
-              ),
-              if (classItem.type == ClassType.recurring)
+              if (classItem.type == ClassType.recurring &&
+                  classItem.status != ClassStatus.completed)
                 ListTile(
                   leading: Icon(
                     Icons.cancel_schedule_send,
