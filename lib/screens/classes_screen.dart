@@ -771,13 +771,22 @@ class _ClassesScreenState extends State<ClassesScreen> {
                                       segments: const [
                                         ButtonSegment<ClassStatus>(
                                           value: ClassStatus.planned,
-                                          icon: Icon(Icons.event),
-                                          label: Text('Planned'),
+                                          icon: Icon(Icons.event, size: 18),
+                                          label: Text(
+                                            'Planned',
+                                            style: TextStyle(fontSize: 13),
+                                          ),
                                         ),
                                         ButtonSegment<ClassStatus>(
                                           value: ClassStatus.completed,
-                                          icon: Icon(Icons.check_circle),
-                                          label: Text('Done'),
+                                          icon: Icon(
+                                            Icons.check_circle,
+                                            size: 18,
+                                          ),
+                                          label: Text(
+                                            'Done',
+                                            style: TextStyle(fontSize: 13),
+                                          ),
                                         ),
                                       ],
                                       selected: {_status},
@@ -790,6 +799,13 @@ class _ClassesScreenState extends State<ClassesScreen> {
                                       },
                                       style: ButtonStyle(
                                         visualDensity: VisualDensity.compact,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                        padding: MaterialStateProperty.all(
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
