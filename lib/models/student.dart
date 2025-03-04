@@ -8,6 +8,7 @@ class StudentFields {
   static const String location = 'location';
   static const String phone = 'phone';
   static const String color = 'color';
+  static const String active = 'active';
 }
 
 class Student {
@@ -18,6 +19,7 @@ class Student {
   final Color color;
   final List<Subject> subjects;
   final List<Class> classes;
+  final bool active;
 
   Student({
     required this.id,
@@ -27,6 +29,7 @@ class Student {
     required this.color,
     List<Subject>? subjects,
     List<Class>? classes,
+    this.active = true,
   }) : subjects = subjects ?? [],
        classes = classes ?? [];
 
@@ -36,7 +39,8 @@ class Student {
       'name': name,
       'location': location,
       'phone': phone,
-      'color': color.value,
+      'color': color.value.toString(),
+      'active': active ? 1 : 0,
     };
   }
 
@@ -47,6 +51,7 @@ class Student {
       location: json['location'] as String,
       phone: json['phone'] as String,
       color: Color(int.parse(json['color'] as String)),
+      active: (json['active'] as int?) == 1,
     );
   }
 
@@ -58,6 +63,7 @@ class Student {
     Color? color,
     List<Subject>? subjects,
     List<Class>? classes,
+    bool? active,
   }) {
     return Student(
       id: id ?? this.id,
@@ -67,6 +73,7 @@ class Student {
       color: color ?? this.color,
       subjects: subjects ?? List.from(this.subjects),
       classes: classes ?? List.from(this.classes),
+      active: active ?? this.active,
     );
   }
 

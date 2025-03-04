@@ -29,6 +29,8 @@ class _StudentsScreenState extends State<StudentsScreen> {
   final RegExp _phoneRegex = RegExp(r'^\+?[0-9]{9,15}$');
 
   List<Student> students = [];
+  List<Student> archivedStudents = [];
+  bool _showArchived = false;
   Color _selectedColor = Colors.blue;
 
   @override
@@ -59,8 +61,13 @@ class _StudentsScreenState extends State<StudentsScreen> {
 
   // Database operations
   Future<void> _loadStudents() async {
-    final loadedStudents = await DatabaseService.instance.getStudents();
-    setState(() => students = loadedStudents);
+    final loadedStudents = await DatabaseService.instance.getStudents(
+      includeArchived: true,
+    );
+    setState(() {
+      students = loadedStudents.where((s) => s.active).toList();
+      archivedStudents = loadedStudents.where((s) => !s.active).toList();
+    });
   }
 
   Future<void> _cleanupInvalidUsers() async {
@@ -254,125 +261,236 @@ class _StudentsScreenState extends State<StudentsScreen> {
     );
   }
 
-  Widget _buildStudentTile(Student student) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            // Leading - Avatar
-            CircleAvatar(
-              backgroundColor: student.color,
-              child: Text(
-                student.name[0],
-                style: const TextStyle(color: Colors.white),
+  Future<void> _showArchiveConfirmation(Student student) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Archive Student'),
+            content: Text(
+              'Are you sure you want to archive "${student.name}"?\n\n'
+              'The student will be hidden from new class creation but preserved for historical records.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
               ),
-            ),
-            const SizedBox(width: 16),
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    student.name,
-                    style: Theme.of(context).textTheme.titleMedium,
-                    overflow: TextOverflow.ellipsis,
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(
+                    Theme.of(context).colorScheme.error,
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on, size: 14),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          student.location,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.phone, size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        student.phone,
-                        style: const TextStyle(fontFamily: 'monospace'),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
+                child: const Text('Archive'),
               ),
-            ),
-            const SizedBox(width: 8),
-            // Action Buttons
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildActionButton(
-                  Icons.sms,
-                  Colors.green,
-                  () => _sendSMS(student.phone),
-                  'Send SMS',
-                ),
-                const SizedBox(width: 8),
-                _buildActionButton(
-                  Icons.phone,
-                  Colors.blue,
-                  () => _makePhoneCall(student.phone),
-                  'Make call',
-                ),
-                const SizedBox(width: 8),
-                _buildActionButton(
-                  Icons.edit,
-                  null,
-                  () => _showStudentDialog(student),
-                  'Edit student',
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
     );
+
+    if (confirmed == true) {
+      await DatabaseService.instance.archiveStudent(student.id);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${student.name} has been archived'),
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () async {
+              await DatabaseService.instance.restoreStudent(student.id);
+              await _loadStudents();
+            },
+          ),
+        ),
+      );
+      await _loadStudents();
+    }
   }
 
-  Widget _buildActionButton(
-    IconData icon,
-    Color? color,
-    VoidCallback onPressed,
-    String tooltip,
-  ) {
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: IconButton(
-        icon: Icon(icon, size: 24, color: color),
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-        tooltip: tooltip,
-        onPressed: onPressed,
-      ),
+  Future<void> _showRestoreConfirmation(Student student) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Restore Student'),
+            content: Text('Do you want to restore "${student.name}"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Restore'),
+              ),
+            ],
+          ),
     );
+
+    if (confirmed == true) {
+      await DatabaseService.instance.restoreStudent(student.id);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${student.name} has been restored'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      await _loadStudents();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final displayedStudents = _showArchived ? archivedStudents : students;
+
     return Scaffold(
-      body:
-          students.isEmpty
-              ? const Center(child: Text('No students added yet'))
-              : ListView.builder(
-                itemCount: students.length,
-                itemBuilder: (_, index) => _buildStudentTile(students[index]),
-              ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showStudentDialog(),
-        child: const Icon(Icons.add),
+      appBar: AppBar(
+        title: const Text('Students'),
+        actions: [
+          IconButton(
+            icon: Icon(_showArchived ? Icons.visibility_off : Icons.visibility),
+            onPressed: () {
+              setState(() {
+                _showArchived = !_showArchived;
+              });
+            },
+            tooltip: _showArchived ? 'Hide archived' : 'Show archived',
+          ),
+        ],
       ),
+      body:
+          displayedStudents.isEmpty
+              ? Center(
+                child: Text(
+                  _showArchived
+                      ? 'No archived students'
+                      : 'No students added yet',
+                ),
+              )
+              : ListView.builder(
+                itemCount: displayedStudents.length,
+                itemBuilder: (context, index) {
+                  final student = displayedStudents[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Row(
+                        children: [
+                          // Avatar
+                          CircleAvatar(
+                            backgroundColor: student.color.withOpacity(
+                              student.active ? 1.0 : 0.5,
+                            ),
+                            child: Text(
+                              student.name[0],
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(
+                                  student.active ? 1.0 : 0.7,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Content
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  student.name,
+                                  style:
+                                      student.active
+                                          ? Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium
+                                          : Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium?.copyWith(
+                                            color:
+                                                Theme.of(context).disabledColor,
+                                          ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  student.location,
+                                  style:
+                                      student.active
+                                          ? null
+                                          : TextStyle(
+                                            color:
+                                                Theme.of(context).disabledColor,
+                                          ),
+                                ),
+                                Text(
+                                  student.phone,
+                                  style:
+                                      student.active
+                                          ? null
+                                          : TextStyle(
+                                            color:
+                                                Theme.of(context).disabledColor,
+                                          ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Action buttons
+                          if (student.active) ...[
+                            IconButton(
+                              icon: const Icon(Icons.phone),
+                              onPressed: () => _makePhoneCall(student.phone),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.message),
+                              onPressed: () => _sendSMS(student.phone),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () => _showStudentDialog(student),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.archive,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                              onPressed:
+                                  () => _showArchiveConfirmation(student),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ] else
+                            IconButton(
+                              icon: const Icon(Icons.unarchive),
+                              onPressed:
+                                  () => _showRestoreConfirmation(student),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+      floatingActionButton:
+          !_showArchived
+              ? FloatingActionButton(
+                onPressed: () => _showStudentDialog(),
+                child: const Icon(Icons.add),
+              )
+              : null,
     );
   }
 }

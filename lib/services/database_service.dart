@@ -45,7 +45,7 @@ class DatabaseService {
         );
       }
       if (oldVersion < 4) {
-        // Create temporary table
+        // Create temporary table for subjects
         await txn.execute('''
 CREATE TABLE ${tableSubjects}_temp (
   ${SubjectFields.id} TEXT PRIMARY KEY,
@@ -65,6 +65,28 @@ CREATE TABLE ${tableSubjects}_temp (
         await txn.execute(
           'ALTER TABLE ${tableSubjects}_temp RENAME TO $tableSubjects',
         );
+
+        // Create temporary table for students
+        await txn.execute('''
+CREATE TABLE ${tableStudents}_temp (
+  ${StudentFields.id} TEXT PRIMARY KEY,
+  ${StudentFields.name} TEXT NOT NULL,
+  ${StudentFields.location} TEXT NOT NULL DEFAULT "",
+  ${StudentFields.phone} TEXT NOT NULL DEFAULT "",
+  ${StudentFields.color} TEXT NOT NULL,
+  ${StudentFields.active} INTEGER NOT NULL DEFAULT 1
+)''');
+
+        // Copy data with converted IDs
+        await txn.execute(
+          'INSERT INTO ${tableStudents}_temp SELECT CAST(id AS TEXT) as id, name, location, phone, color, 1 as active FROM $tableStudents',
+        );
+
+        // Drop old table and rename new one
+        await txn.execute('DROP TABLE $tableStudents');
+        await txn.execute(
+          'ALTER TABLE ${tableStudents}_temp RENAME TO $tableStudents',
+        );
       }
     });
   }
@@ -82,7 +104,8 @@ CREATE TABLE $tableStudents (
   ${StudentFields.name} $textType,
   ${StudentFields.location} $textType,
   ${StudentFields.phone} $textType,
-  ${StudentFields.color} $textType
+  ${StudentFields.color} $textType,
+  ${StudentFields.active} $integerType DEFAULT 1
 )
 ''');
 
@@ -113,9 +136,13 @@ CREATE TABLE $tableClasses (
   }
 
   // Student methods
-  Future<List<Student>> getStudents() async {
+  Future<List<Student>> getStudents({bool includeArchived = false}) async {
     final db = await instance.database;
-    final result = await db.query(tableStudents);
+    final query =
+        includeArchived
+            ? 'SELECT * FROM $tableStudents'
+            : 'SELECT * FROM $tableStudents WHERE ${StudentFields.active} = 1';
+    final result = await db.rawQuery(query);
     return result.map((map) => Student.fromJson(map)).toList();
   }
 
@@ -152,6 +179,26 @@ CREATE TABLE $tableClasses (
   Future<void> deleteStudent(String id) async {
     final db = await instance.database;
     await db.delete('students', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> archiveStudent(String id) async {
+    final db = await instance.database;
+    await db.update(
+      tableStudents,
+      {StudentFields.active: 0},
+      where: '${StudentFields.id} = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> restoreStudent(String id) async {
+    final db = await instance.database;
+    await db.update(
+      tableStudents,
+      {StudentFields.active: 1},
+      where: '${StudentFields.id} = ?',
+      whereArgs: [id],
+    );
   }
 
   // Subject methods
