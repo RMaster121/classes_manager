@@ -138,6 +138,6 @@ This application was developed with the assistance of Cursor AI, a powerful AI-p
 
 ## Contact
 
-[Rafał Szczerba] - [rs.szczerba@hotmail.com]
+[Rafał Szczerba](https://github.com/RMaster121) - [rs.szczerba@hotmail.com](mailto:rs.szczerba@hotmail.com)
 
 Project Link: [https://github.com/RMaster121/classes_manager](https://github.com/RMaster121/classes_manager)
