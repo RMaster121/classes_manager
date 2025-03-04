@@ -514,17 +514,35 @@ class _ClassesScreenState extends State<ClassesScreen> {
       _selectedTime.minute,
     );
 
-    final newClass = Class(
-      id: const Uuid().v4(),
-      student: _selectedStudent!,
-      subject: _selectedSubject!,
-      dateTime: dateTime,
-      duration: _duration,
-      status: ClassStatus.planned,
-    );
-
     try {
-      await DatabaseService.instance.addClass(newClass);
+      if (_type == ClassType.oneTime) {
+        final newClass = Class(
+          id: const Uuid().v4(),
+          student: _selectedStudent!,
+          subject: _selectedSubject!,
+          dateTime: dateTime,
+          duration: _duration,
+          status: ClassStatus.planned,
+          type: _type,
+        );
+        await DatabaseService.instance.addClass(newClass);
+      } else {
+        // For recurring classes, create multiple instances
+        for (int i = 0; i < _recurringWeeks; i++) {
+          final recurringDateTime = dateTime.add(Duration(days: i * 7));
+          final newClass = Class(
+            id: const Uuid().v4(),
+            student: _selectedStudent!,
+            subject: _selectedSubject!,
+            dateTime: recurringDateTime,
+            duration: _duration,
+            status: ClassStatus.planned,
+            type: _type,
+          );
+          await DatabaseService.instance.addClass(newClass);
+        }
+      }
+
       if (!mounted) return;
       Navigator.pop(context);
       _loadData();
