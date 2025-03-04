@@ -261,7 +261,8 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
             title: const Text('Archive Subject'),
             content: Text(
               'Are you sure you want to archive "${subject.name}"?\n\n'
-              'The subject will be hidden from new class creation but preserved for historical records.',
+              'The subject will be hidden from new class creation but preserved for historical records.\n\n'
+              'Note: Existing scheduled classes will not be automatically cancelled.',
             ),
             actions: [
               TextButton(

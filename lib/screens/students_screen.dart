@@ -269,7 +269,8 @@ class _StudentsScreenState extends State<StudentsScreen> {
             title: const Text('Archive Student'),
             content: Text(
               'Are you sure you want to archive "${student.name}"?\n\n'
-              'The student will be hidden from new class creation but preserved for historical records.',
+              'The student will be hidden from new class creation but preserved for historical records.\n\n'
+              'Note: Existing scheduled classes will not be automatically cancelled.',
             ),
             actions: [
               TextButton(
