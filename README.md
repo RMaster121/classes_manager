@@ -28,7 +28,25 @@ A Flutter application for tutors and teachers to manage their private classes, s
 
 ## Screenshots
 
-[Add screenshots here]
+### Light Theme
+
+<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+    <img src="screenshots/light/classes.jpg" width="200" alt="Classes Screen - Light"/>
+    <img src="screenshots/light/class_details.jpg" width="200" alt="Class Details - Light"/>
+    <img src="screenshots/light/students.jpg" width="200" alt="Students Screen - Light"/>
+    <img src="screenshots/light/subjects.jpg" width="200" alt="Subjects Screen - Light"/>
+    <img src="screenshots/light/finance.jpg" width="200" alt="Finance Screen - Light"/>
+</div>
+
+### Dark Theme
+
+<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+    <img src="screenshots/dark/classes.jpg" width="200" alt="Classes Screen - Dark"/>
+    <img src="screenshots/dark/class_details.jpg" width="200" alt="Class Details - Dark"/>
+    <img src="screenshots/dark/students.jpg" width="200" alt="Students Screen - Dark"/>
+    <img src="screenshots/dark/subjects.jpg" width="200" alt="Subjects Screen - Dark"/>
+    <img src="screenshots/dark/finance.jpg" width="200" alt="Finance Screen - Dark"/>
+</div>
 
 ## Getting Started
 
