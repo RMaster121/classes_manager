@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import '../models/class.dart';
 import '../models/student.dart';
 import '../models/subject.dart';
 import '../services/database_service.dart';
+import '../screens/class_details_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 class ClassesScreen extends StatefulWidget {
   const ClassesScreen({super.key});
@@ -501,6 +504,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
   Future<void> _addClass() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedStudent == null || _selectedSubject == null) return;
+
     final dateTime = DateTime(
       selectedDate.year,
       selectedDate.month,
@@ -509,41 +514,39 @@ class _ClassesScreenState extends State<ClassesScreen> {
       _selectedTime.minute,
     );
 
-    // For recurring classes, create instances for the selected number of weeks
-    if (_type == ClassType.recurring) {
-      final baseId = DateTime.now().millisecondsSinceEpoch.toString();
-      for (int i = 0; i < _recurringWeeks; i++) {
-        final classDateTime = dateTime.add(Duration(days: 7 * i));
-        final newClass = Class(
-          id: '${baseId}_$i',
-          student: _selectedStudent!,
-          subject: _selectedSubject!,
-          dateTime: classDateTime,
-          duration: _duration,
-          status: _status,
-          notes: _notesController.text.isEmpty ? null : _notesController.text,
-          type: _type,
-        );
-        await DatabaseService.instance.addClass(newClass);
-      }
-    } else {
-      final newClass = Class(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        student: _selectedStudent!,
-        subject: _selectedSubject!,
-        dateTime: dateTime,
-        duration: _duration,
-        status: _status,
-        notes: _notesController.text.isEmpty ? null : _notesController.text,
-        type: _type,
-      );
-      await DatabaseService.instance.addClass(newClass);
-    }
+    final newClass = Class(
+      id: const Uuid().v4(),
+      student: _selectedStudent!,
+      subject: _selectedSubject!,
+      dateTime: dateTime,
+      duration: _duration,
+      status: ClassStatus.planned,
+    );
 
-    await _loadData();
-    if (mounted) {
+    try {
+      await DatabaseService.instance.addClass(newClass);
+      if (!mounted) return;
       Navigator.pop(context);
-      _resetForm();
+      _loadData();
+    } catch (e) {
+      if (!mounted) return;
+      // Show error dialog for overlapping classes
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Cannot Add Class'),
+              content: const Text(
+                'This time slot overlaps with another class. Please choose a different time.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+      );
     }
   }
 
@@ -875,58 +878,79 @@ class _ClassesScreenState extends State<ClassesScreen> {
       _selectedTime.minute,
     );
 
-    if (editFuture) {
-      // Update all future classes
-      final classes = await DatabaseService.instance.getFutureClasses(
-        _selectedStudent!.id,
-        _selectedSubject!.id,
-        classItem.dateTime,
-      );
-
-      for (final cls in classes) {
-        // Calculate the new date while preserving the week structure
-        DateTime newDateTime = cls.dateTime;
-        if (newDayOfWeek != null) {
-          // Calculate days to add/subtract to reach the target day of week
-          final currentDayOfWeek = cls.dateTime.weekday;
-          final daysToAdd = (newDayOfWeek - currentDayOfWeek) % 7;
-          newDateTime = cls.dateTime.add(Duration(days: daysToAdd));
-        }
-        // Apply the new time while keeping the calculated date
-        newDateTime = DateTime(
-          newDateTime.year,
-          newDateTime.month,
-          newDateTime.day,
-          _selectedTime.hour,
-          _selectedTime.minute,
+    try {
+      if (editFuture) {
+        // Update all future classes
+        final classes = await DatabaseService.instance.getFutureClasses(
+          _selectedStudent!.id,
+          _selectedSubject!.id,
+          classItem.dateTime,
         );
 
-        final updatedClass = cls.copyWith(
+        for (final cls in classes) {
+          // Calculate the new date while preserving the week structure
+          DateTime newDateTime = cls.dateTime;
+          if (newDayOfWeek != null) {
+            // Calculate days to add/subtract to reach the target day of week
+            final currentDayOfWeek = cls.dateTime.weekday;
+            final daysToAdd = (newDayOfWeek - currentDayOfWeek) % 7;
+            newDateTime = cls.dateTime.add(Duration(days: daysToAdd));
+          }
+          // Apply the new time while keeping the calculated date
+          newDateTime = DateTime(
+            newDateTime.year,
+            newDateTime.month,
+            newDateTime.day,
+            _selectedTime.hour,
+            _selectedTime.minute,
+          );
+
+          final updatedClass = cls.copyWith(
+            student: _selectedStudent,
+            subject: _selectedSubject,
+            duration: _duration,
+            dateTime: newDateTime,
+            // Don't update status and notes for future classes
+          );
+          await DatabaseService.instance.updateClass(updatedClass);
+        }
+      } else {
+        // Update single class
+        final updatedClass = classItem.copyWith(
           student: _selectedStudent,
           subject: _selectedSubject,
+          dateTime: dateTime,
           duration: _duration,
-          dateTime: newDateTime,
-          // Don't update status and notes for future classes
+          status: _status,
+          notes: _notesController.text.isEmpty ? null : _notesController.text,
         );
         await DatabaseService.instance.updateClass(updatedClass);
       }
-    } else {
-      // Update single class
-      final updatedClass = classItem.copyWith(
-        student: _selectedStudent,
-        subject: _selectedSubject,
-        dateTime: dateTime,
-        duration: _duration,
-        status: _status,
-        notes: _notesController.text.isEmpty ? null : _notesController.text,
-      );
-      await DatabaseService.instance.updateClass(updatedClass);
-    }
 
-    await _loadData();
-    if (mounted) {
-      Navigator.pop(context);
-      _resetForm();
+      await _loadData();
+      if (mounted) {
+        Navigator.pop(context);
+        _resetForm();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      // Show error dialog for overlapping classes
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Cannot Save Changes'),
+              content: const Text(
+                'This time slot overlaps with another class. Please choose a different time.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+      );
     }
   }
 
@@ -940,211 +964,91 @@ class _ClassesScreenState extends State<ClassesScreen> {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            // Leading avatar with status indicator
-            Stack(
-              children: [
-                CircleAvatar(
-                  backgroundColor: classItem.student.color.withOpacity(
-                    shouldFade ? 0.6 : 1.0,
-                  ),
-                  child: Text(
-                    classItem.student.name[0],
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(shouldFade ? 0.8 : 1.0),
-                    ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ClassDetailsScreen(classItem: classItem),
+            ),
+          ).then((wasCompleted) {
+            if (wasCompleted == true) {
+              _loadData();
+            }
+          });
+        },
+        child: ListTile(
+          leading: Stack(
+            children: [
+              CircleAvatar(
+                backgroundColor: classItem.student.color.withOpacity(
+                  shouldFade ? 0.6 : 1.0,
+                ),
+                child: Text(
+                  classItem.student.name[0],
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(shouldFade ? 0.8 : 1.0),
                   ),
                 ),
-                if (classItem.type == ClassType.recurring)
-                  Positioned(
-                    right: -2,
-                    bottom: -2,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary
-                            .withOpacity(shouldFade ? 0.6 : 1.0),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.repeat,
-                        size: 12,
-                        color: Theme.of(context).colorScheme.onPrimary,
-                      ),
-                    ),
-                  ),
-                if (isCompleted)
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.check_circle,
-                        size: 12,
-                        color: Theme.of(context).colorScheme.onPrimary,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(width: 12),
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        child: Icon(
-                          Icons.person_outline,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.primary
-                              .withOpacity(shouldFade ? 0.6 : 1.0),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          classItem.student.name,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface
-                                .withOpacity(shouldFade ? 0.6 : 1.0),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        child: Icon(
-                          Icons.calendar_today,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.secondary
-                              .withOpacity(shouldFade ? 0.6 : 1.0),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          dateFormat.format(classItem.dateTime),
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.secondary
-                                .withOpacity(shouldFade ? 0.6 : 1.0),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Text(
-                        '•',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.secondary
-                              .withOpacity(shouldFade ? 0.6 : 1.0),
-                          fontSize: 8,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        flex: 2,
-                        child: Text(
-                          timeFormat.format(classItem.dateTime),
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.secondary
-                                .withOpacity(shouldFade ? 0.6 : 1.0),
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        child: Icon(
-                          Icons.book_outlined,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.secondary
-                              .withOpacity(shouldFade ? 0.6 : 1.0),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          classItem.subject.name,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.secondary
-                                .withOpacity(shouldFade ? 0.6 : 1.0),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${classItem.duration}h',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface
-                              .withOpacity(shouldFade ? 0.6 : 1.0),
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
-            ),
-            const SizedBox(width: 8),
-            // Price and menu
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '\$${(classItem.subject.basePricePerHour * classItem.duration).toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(shouldFade ? 0.6 : 1.0),
-                    fontFeatures: const [FontFeature.tabularFigures()],
+              if (classItem.type == ClassType.recurring)
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(shouldFade ? 0.6 : 1.0),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.repeat,
+                      size: 12,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(shouldFade ? 0.6 : 1.0),
-                  ),
-                  onPressed: () => _showClassOptionsMenu(context, classItem),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
+            ],
+          ),
+          title: Text(
+            classItem.student.name,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withOpacity(shouldFade ? 0.6 : 1.0),
             ),
-          ],
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${dateFormat.format(classItem.dateTime)} • ${timeFormat.format(classItem.dateTime)}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.secondary.withOpacity(shouldFade ? 0.6 : 1.0),
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              Text(
+                classItem.subject.name,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.secondary.withOpacity(shouldFade ? 0.6 : 1.0),
+                ),
+              ),
+            ],
+          ),
+          trailing: IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () => _showClassOptionsMenu(context, classItem),
+            color: Theme.of(
+              context,
+            ).colorScheme.secondary.withOpacity(shouldFade ? 0.6 : 1.0),
+          ),
         ),
       ),
     );
