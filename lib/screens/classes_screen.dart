@@ -7,6 +7,7 @@ import '../services/database_service.dart';
 import '../screens/class_details_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ClassesScreen extends StatefulWidget {
   const ClassesScreen({super.key});
@@ -118,6 +119,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
   }
 
   void _showClassOptionsMenu(BuildContext context, Class classItem) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       builder:
@@ -126,7 +128,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.edit),
-                title: const Text('Edit'),
+                title: Text(l10n.edit),
                 onTap: () {
                   Navigator.pop(context);
                   _showEditClassDialog(classItem);
@@ -135,7 +137,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
               if (classItem.type == ClassType.recurring)
                 ListTile(
                   leading: const Icon(Icons.edit_calendar),
-                  title: const Text('Edit all future classes'),
+                  title: Text(l10n.editFutureClasses),
                   onTap: () {
                     Navigator.pop(context);
                     _showEditClassDialog(classItem, editFuture: true);
@@ -144,7 +146,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
               if (classItem.status != ClassStatus.completed)
                 ListTile(
                   leading: const Icon(Icons.check_circle),
-                  title: const Text('Mark as completed'),
+                  title: Text(l10n.markAsCompleted),
                   onTap: () async {
                     Navigator.pop(context);
                     await DatabaseService.instance.markClassAsCompleted(
@@ -160,7 +162,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
                     color: Theme.of(context).colorScheme.error,
                   ),
                   title: Text(
-                    'Cancel class',
+                    l10n.cancelClass,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -178,7 +180,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
                     color: Theme.of(context).colorScheme.error,
                   ),
                   title: Text(
-                    'Cancel all future classes',
+                    l10n.cancelAllFutureClasses,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -197,26 +199,27 @@ class _ClassesScreenState extends State<ClassesScreen> {
     Class classItem, {
     bool cancelFuture = false,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder:
           (context) => AlertDialog(
             title: Text(
-              cancelFuture ? 'Cancel All Future Classes?' : 'Cancel Class?',
+              cancelFuture ? l10n.cancelAllFutureClasses : l10n.cancelClass,
             ),
             content: Text(
               cancelFuture
-                  ? 'This will cancel all future occurrences of this class. This action cannot be undone.'
-                  : 'Are you sure you want to cancel this class?',
+                  ? l10n.cancelAllFutureClassesConfirm
+                  : l10n.cancelClassConfirm,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('No'),
+                child: Text(l10n.no),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Yes'),
+                child: Text(l10n.yes),
               ),
             ],
           ),
@@ -241,6 +244,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
   }
 
   void _showAddClassDialog() {
+    final l10n = AppLocalizations.of(context)!;
     _resetForm();
     showDialog(
       context: context,
@@ -258,15 +262,15 @@ class _ClassesScreenState extends State<ClassesScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Add New Class',
+                              l10n.addNewClass,
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             const SizedBox(height: 16),
                             // Student Selection
                             DropdownButtonFormField<Student>(
                               value: _selectedStudent,
-                              decoration: const InputDecoration(
-                                labelText: 'Student',
+                              decoration: InputDecoration(
+                                labelText: l10n.student,
                               ),
                               items:
                                   students.map((student) {
@@ -281,15 +285,15 @@ class _ClassesScreenState extends State<ClassesScreen> {
                               validator:
                                   (value) =>
                                       value == null
-                                          ? 'Please select a student'
+                                          ? l10n.pleaseSelectStudent
                                           : null,
                             ),
                             const SizedBox(height: 16),
                             // Subject Selection
                             DropdownButtonFormField<Subject>(
                               value: _selectedSubject,
-                              decoration: const InputDecoration(
-                                labelText: 'Subject',
+                              decoration: InputDecoration(
+                                labelText: l10n.subject,
                               ),
                               items:
                                   subjects.map((subject) {
@@ -304,7 +308,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
                               validator:
                                   (value) =>
                                       value == null
-                                          ? 'Please select a subject'
+                                          ? l10n.pleaseSelectSubject
                                           : null,
                             ),
                             const SizedBox(height: 16),
@@ -315,8 +319,10 @@ class _ClassesScreenState extends State<ClassesScreen> {
                                   child: TextButton.icon(
                                     icon: const Icon(Icons.calendar_today),
                                     label: Text(
-                                      DateFormat(
-                                        'MMM dd, yyyy',
+                                      DateFormat.yMMMd(
+                                        Localizations.localeOf(
+                                          context,
+                                        ).languageCode,
                                       ).format(selectedDate),
                                     ),
                                     onPressed: () async {
@@ -360,20 +366,22 @@ class _ClassesScreenState extends State<ClassesScreen> {
                             // Duration Slider
                             Row(
                               children: [
-                                const Text('Duration:'),
+                                Text('${l10n.duration}:'),
                                 Expanded(
                                   child: Slider(
                                     value: _duration,
                                     min: 0.5,
                                     max: 3.0,
                                     divisions: 5,
-                                    label: '$_duration hours',
+                                    label: '$_duration ${l10n.hours}',
                                     onChanged: (value) {
                                       setDialogState(() => _duration = value);
                                     },
                                   ),
                                 ),
-                                Text('${_duration.toStringAsFixed(1)}h'),
+                                Text(
+                                  '${_duration.toStringAsFixed(1)}${l10n.hours}',
+                                ),
                               ],
                             ),
                             const SizedBox(height: 16),
@@ -381,22 +389,22 @@ class _ClassesScreenState extends State<ClassesScreen> {
                             Row(
                               children: [
                                 Text(
-                                  'Type:',
+                                  '${l10n.type}:',
                                   style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: SegmentedButton<ClassType>(
-                                    segments: const [
+                                    segments: [
                                       ButtonSegment<ClassType>(
                                         value: ClassType.oneTime,
-                                        icon: Icon(Icons.event),
-                                        label: Text('Single'),
+                                        icon: const Icon(Icons.event),
+                                        label: Text(l10n.single),
                                       ),
                                       ButtonSegment<ClassType>(
                                         value: ClassType.recurring,
-                                        icon: Icon(Icons.repeat),
-                                        label: Text('Weekly'),
+                                        icon: const Icon(Icons.repeat),
+                                        label: Text(l10n.weekly),
                                       ),
                                     ],
                                     selected: {_type},
@@ -421,7 +429,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
                               Row(
                                 children: [
                                   Text(
-                                    'Repeat for:',
+                                    l10n.repeatFor,
                                     style:
                                         Theme.of(context).textTheme.bodyMedium,
                                   ),
@@ -429,14 +437,16 @@ class _ClassesScreenState extends State<ClassesScreen> {
                                   Expanded(
                                     child: DropdownButtonFormField<int>(
                                       value: _recurringWeeks,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Number of weeks',
+                                      decoration: InputDecoration(
+                                        labelText: l10n.numberOfWeeks,
                                       ),
                                       items:
                                           [4, 8, 12, 16, 24].map((weeks) {
                                             return DropdownMenuItem(
                                               value: weeks,
-                                              child: Text('$weeks weeks'),
+                                              child: Text(
+                                                '$weeks ${l10n.weeks}',
+                                              ),
                                             );
                                           }).toList(),
                                       onChanged: (value) {
@@ -454,8 +464,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
                             // Notes
                             TextFormField(
                               controller: _notesController,
-                              decoration: const InputDecoration(
-                                labelText: 'Notes',
+                              decoration: InputDecoration(
+                                labelText: l10n.notes,
                                 alignLabelWithHint: true,
                               ),
                               maxLines: 3,
@@ -470,12 +480,12 @@ class _ClassesScreenState extends State<ClassesScreen> {
                                     Navigator.pop(context);
                                     _resetForm();
                                   },
-                                  child: const Text('Cancel'),
+                                  child: Text(l10n.cancel),
                                 ),
                                 const SizedBox(width: 8),
                                 FilledButton(
                                   onPressed: _addClass,
-                                  child: const Text('Add Class'),
+                                  child: Text(l10n.addClass),
                                 ),
                               ],
                             ),
@@ -548,19 +558,18 @@ class _ClassesScreenState extends State<ClassesScreen> {
       _loadData();
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       // Show error dialog for overlapping classes
       showDialog(
         context: context,
         builder:
             (context) => AlertDialog(
-              title: const Text('Cannot Add Class'),
-              content: const Text(
-                'This time slot overlaps with another class. Please choose a different time.',
-              ),
+              title: Text(l10n.cannotAddClass),
+              content: Text(l10n.timeSlotOverlaps),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
+                  child: Text(l10n.ok),
                 ),
               ],
             ),
@@ -569,6 +578,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
   }
 
   void _showEditClassDialog(Class classItem, {bool editFuture = false}) {
+    final l10n = AppLocalizations.of(context)!;
     _selectedStudent = classItem.student;
     _selectedSubject = classItem.subject;
     selectedDate = classItem.dateTime;
@@ -597,15 +607,15 @@ class _ClassesScreenState extends State<ClassesScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              editFuture ? 'Edit Future Classes' : 'Edit Class',
+                              editFuture ? l10n.editFutureClasses : l10n.edit,
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             const SizedBox(height: 16),
                             // Student Selection
                             DropdownButtonFormField<Student>(
                               value: _selectedStudent,
-                              decoration: const InputDecoration(
-                                labelText: 'Student',
+                              decoration: InputDecoration(
+                                labelText: l10n.student,
                               ),
                               items:
                                   students.map((student) {
@@ -620,15 +630,15 @@ class _ClassesScreenState extends State<ClassesScreen> {
                               validator:
                                   (value) =>
                                       value == null
-                                          ? 'Please select a student'
+                                          ? l10n.pleaseSelectStudent
                                           : null,
                             ),
                             const SizedBox(height: 16),
                             // Subject Selection
                             DropdownButtonFormField<Subject>(
                               value: _selectedSubject,
-                              decoration: const InputDecoration(
-                                labelText: 'Subject',
+                              decoration: InputDecoration(
+                                labelText: l10n.subject,
                               ),
                               items:
                                   subjects.map((subject) {
@@ -643,66 +653,17 @@ class _ClassesScreenState extends State<ClassesScreen> {
                               validator:
                                   (value) =>
                                       value == null
-                                          ? 'Please select a subject'
+                                          ? l10n.pleaseSelectSubject
                                           : null,
                             ),
                             const SizedBox(height: 16),
-                            // Date/Time Selection
-                            if (!editFuture)
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextButton.icon(
-                                      icon: const Icon(Icons.calendar_today),
-                                      label: Text(
-                                        DateFormat(
-                                          'MMM dd, yyyy',
-                                        ).format(selectedDate),
-                                      ),
-                                      onPressed: () async {
-                                        final date = await showDatePicker(
-                                          context: context,
-                                          initialDate: selectedDate,
-                                          firstDate: DateTime.now(),
-                                          lastDate: DateTime.now().add(
-                                            const Duration(days: 365),
-                                          ),
-                                        );
-                                        if (date != null) {
-                                          setDialogState(
-                                            () => selectedDate = date,
-                                          );
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextButton.icon(
-                                      icon: const Icon(Icons.access_time),
-                                      label: Text(
-                                        _selectedTime.format(context),
-                                      ),
-                                      onPressed: () async {
-                                        final time = await showTimePicker(
-                                          context: context,
-                                          initialTime: _selectedTime,
-                                        );
-                                        if (time != null) {
-                                          setDialogState(
-                                            () => _selectedTime = time,
-                                          );
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
                             // Day of Week and Time Selection for future classes
                             if (editFuture) ...[
-                              const Text(
-                                'Change schedule for all future classes:',
-                                style: TextStyle(fontWeight: FontWeight.w500),
+                              Text(
+                                l10n.changeScheduleForFutureClasses,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               const SizedBox(height: 8),
                               Row(
@@ -710,8 +671,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
                                   Expanded(
                                     child: DropdownButtonFormField<int>(
                                       value: _selectedDayOfWeek,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Day of Week',
+                                      decoration: InputDecoration(
+                                        labelText: l10n.dayOfWeek,
                                       ),
                                       items: [
                                         for (int i = 1; i <= 7; i++)
@@ -733,26 +694,6 @@ class _ClassesScreenState extends State<ClassesScreen> {
                                       },
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextButton.icon(
-                                      icon: const Icon(Icons.access_time),
-                                      label: Text(
-                                        _selectedTime.format(context),
-                                      ),
-                                      onPressed: () async {
-                                        final time = await showTimePicker(
-                                          context: context,
-                                          initialTime: _selectedTime,
-                                        );
-                                        if (time != null) {
-                                          setDialogState(
-                                            () => _selectedTime = time,
-                                          );
-                                        }
-                                      },
-                                    ),
-                                  ),
                                 ],
                               ),
                             ],
@@ -760,20 +701,22 @@ class _ClassesScreenState extends State<ClassesScreen> {
                             // Duration Slider
                             Row(
                               children: [
-                                const Text('Duration:'),
+                                Text('${l10n.duration}:'),
                                 Expanded(
                                   child: Slider(
                                     value: _duration,
                                     min: 0.5,
                                     max: 3.0,
                                     divisions: 5,
-                                    label: '$_duration hours',
+                                    label: '$_duration ${l10n.hours}',
                                     onChanged: (value) {
                                       setDialogState(() => _duration = value);
                                     },
                                   ),
                                 ),
-                                Text('${_duration.toStringAsFixed(1)}h'),
+                                Text(
+                                  '${_duration.toStringAsFixed(1)}${l10n.hours}',
+                                ),
                               ],
                             ),
                             const SizedBox(height: 16),
@@ -782,31 +725,38 @@ class _ClassesScreenState extends State<ClassesScreen> {
                               Row(
                                 children: [
                                   Text(
-                                    'Status:',
+                                    '${l10n.status}:',
                                     style:
                                         Theme.of(context).textTheme.bodyMedium,
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: SegmentedButton<ClassStatus>(
-                                      segments: const [
+                                      segments: [
                                         ButtonSegment<ClassStatus>(
                                           value: ClassStatus.planned,
-                                          icon: Icon(Icons.event, size: 18),
+                                          icon: const Icon(
+                                            Icons.event,
+                                            size: 18,
+                                          ),
                                           label: Text(
-                                            'Planned',
-                                            style: TextStyle(fontSize: 13),
+                                            l10n.planned,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                            ),
                                           ),
                                         ),
                                         ButtonSegment<ClassStatus>(
                                           value: ClassStatus.completed,
-                                          icon: Icon(
+                                          icon: const Icon(
                                             Icons.check_circle,
                                             size: 18,
                                           ),
                                           label: Text(
-                                            'Done',
-                                            style: TextStyle(fontSize: 13),
+                                            l10n.done,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -837,8 +787,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
                             if (!editFuture)
                               TextFormField(
                                 controller: _notesController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Notes',
+                                decoration: InputDecoration(
+                                  labelText: l10n.notes,
                                   alignLabelWithHint: true,
                                 ),
                                 maxLines: 3,
@@ -853,7 +803,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
                                     Navigator.pop(context);
                                     _resetForm();
                                   },
-                                  child: const Text('Cancel'),
+                                  child: Text(l10n.cancel),
                                 ),
                                 const SizedBox(width: 8),
                                 FilledButton(
@@ -863,7 +813,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
                                         editFuture,
                                         editFuture ? _selectedDayOfWeek : null,
                                       ),
-                                  child: const Text('Save'),
+                                  child: Text(l10n.save),
                                 ),
                               ],
                             ),
@@ -952,19 +902,18 @@ class _ClassesScreenState extends State<ClassesScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       // Show error dialog for overlapping classes
       showDialog(
         context: context,
         builder:
             (context) => AlertDialog(
-              title: const Text('Cannot Save Changes'),
-              content: const Text(
-                'This time slot overlaps with another class. Please choose a different time.',
-              ),
+              title: Text(l10n.cannotSaveChanges),
+              content: Text(l10n.timeSlotOverlaps),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
+                  child: Text(l10n.ok),
                 ),
               ],
             ),
@@ -973,12 +922,32 @@ class _ClassesScreenState extends State<ClassesScreen> {
   }
 
   Widget _buildClassTile(Class classItem) {
-    final dateFormat = DateFormat('EEE, d MMM');
-    final timeFormat = DateFormat('HH:mm');
+    final l10n = AppLocalizations.of(context)!;
+    final dateFormat = DateFormat(
+      'EEEE, d MMM',
+      Localizations.localeOf(context).languageCode,
+    );
+    final timeFormat = DateFormat.Hm(
+      Localizations.localeOf(context).languageCode,
+    );
+    final isPolish = Localizations.localeOf(context).languageCode == 'pl';
+    final currencyFormat = NumberFormat.currency(
+      symbol: isPolish ? 'zł' : '\$',
+      decimalDigits: 2,
+      customPattern: isPolish ? '#,##0.00¤' : '¤#,##0.00',
+    );
     final now = DateTime.now();
     final isPast = classItem.dateTime.isBefore(now);
     final isCompleted = classItem.status == ClassStatus.completed;
     final shouldFade = isPast || isCompleted;
+
+    // Calculate price
+    final price = classItem.subject.basePricePerHour * classItem.duration;
+
+    // Format date with capitalized first letter
+    final formattedDate = dateFormat.format(classItem.dateTime);
+    final capitalizedDate =
+        formattedDate[0].toUpperCase() + formattedDate.substring(1);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -996,6 +965,9 @@ class _ClassesScreenState extends State<ClassesScreen> {
           });
         },
         child: ListTile(
+          horizontalTitleGap: 12,
+          minLeadingWidth: 40,
+          contentPadding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
           leading: Stack(
             children: [
               CircleAvatar(
@@ -1041,14 +1013,30 @@ class _ClassesScreenState extends State<ClassesScreen> {
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '${dateFormat.format(classItem.dateTime)} • ${timeFormat.format(classItem.dateTime)}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.secondary.withOpacity(shouldFade ? 0.6 : 1.0),
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Expanded(
+                    child: Text(
+                      '$capitalizedDate •${timeFormat.format(classItem.dateTime)}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary
+                            .withOpacity(shouldFade ? 0.6 : 1.0),
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    currencyFormat.format(price),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(shouldFade ? 0.6 : 1.0),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
               Text(
                 classItem.subject.name,
@@ -1066,6 +1054,9 @@ class _ClassesScreenState extends State<ClassesScreen> {
             color: Theme.of(
               context,
             ).colorScheme.secondary.withOpacity(shouldFade ? 0.6 : 1.0),
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
         ),
       ),
@@ -1074,6 +1065,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     // Only show past completed classes from pastClasses list
     final filteredPastClasses =
         pastClasses
@@ -1109,7 +1102,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
       appBar: AppBar(),
       body:
           allClasses.isEmpty
-              ? const Center(child: Text('No classes scheduled'))
+              ? Center(child: Text(l10n.noClassesScheduled))
               : RefreshIndicator(
                 onRefresh: () async {
                   if (!_loadingPastClasses) {
@@ -1127,7 +1120,7 @@ class _ClassesScreenState extends State<ClassesScreen> {
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Text(
-                          'Pull down to load past classes',
+                          l10n.pullToLoadPastClasses,
                           style: Theme.of(context).textTheme.bodySmall,
                           textAlign: TextAlign.center,
                         ),
@@ -1154,8 +1147,8 @@ class _ClassesScreenState extends State<ClassesScreen> {
                                   ),
                                   label: Text(
                                     _showingAllClasses
-                                        ? 'Show Less'
-                                        : 'See More',
+                                        ? l10n.showLess
+                                        : l10n.seeMore,
                                   ),
                                 ),
                               ),

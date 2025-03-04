@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'utils/theme.dart';
 import 'services/database_service.dart';
 import 'screens/students_screen.dart';
 import 'screens/subjects_screen.dart';
 import 'screens/classes_screen.dart';
 import 'screens/finance_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +27,16 @@ class MainApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'), // English
+        Locale('pl'), // Polish
+      ],
       home: const MainScreen(),
     );
   }
@@ -39,14 +51,6 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-
-  static const String _appName = 'Classes Manager';
-  static const List<String> _screenTitles = [
-    'Classes',
-    'Students',
-    'Subjects',
-    'Finance',
-  ];
 
   static const List<Widget> _screens = <Widget>[
     ClassesScreen(),
@@ -63,6 +67,8 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
@@ -70,7 +76,7 @@ class _MainScreenState extends State<MainScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _appName,
+              l10n.appName,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.primary,
@@ -92,7 +98,13 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _screenTitles[_selectedIndex],
+                  _selectedIndex == 0
+                      ? l10n.classes
+                      : _selectedIndex == 1
+                      ? l10n.students
+                      : _selectedIndex == 2
+                      ? l10n.subjects
+                      : l10n.finance,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(
                       context,
@@ -112,16 +124,22 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
-        destinations: const <NavigationDestination>[
+        destinations: <NavigationDestination>[
           NavigationDestination(
-            icon: Icon(Icons.calendar_today),
-            label: 'Classes',
+            icon: const Icon(Icons.calendar_today),
+            label: l10n.classes,
           ),
-          NavigationDestination(icon: Icon(Icons.people), label: 'Students'),
-          NavigationDestination(icon: Icon(Icons.book), label: 'Subjects'),
           NavigationDestination(
-            icon: Icon(Icons.attach_money),
-            label: 'Finance',
+            icon: const Icon(Icons.people),
+            label: l10n.students,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.book),
+            label: l10n.subjects,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.attach_money),
+            label: l10n.finance,
           ),
         ],
       ),
