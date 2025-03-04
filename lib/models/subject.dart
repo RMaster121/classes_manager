@@ -5,6 +5,7 @@ class SubjectFields {
   static const String name = 'name';
   static const String basePricePerHour = 'basePricePerHour';
   static const String icon = 'icon';
+  static const String active = 'active';
 }
 
 class Subject {
@@ -12,12 +13,14 @@ class Subject {
   final String name;
   final double basePricePerHour;
   final String icon;
+  final bool active;
 
   Subject({
     required this.id,
     required this.name,
     required this.basePricePerHour,
     required this.icon,
+    this.active = true,
   });
 
   Map<String, dynamic> toJson() {
@@ -26,6 +29,7 @@ class Subject {
       'name': name,
       'basePricePerHour': basePricePerHour,
       'icon': icon,
+      'active': active ? 1 : 0,
     };
   }
 
@@ -35,6 +39,7 @@ class Subject {
       name: json['name'] as String,
       basePricePerHour: json['basePricePerHour'] as double,
       icon: json['icon'] as String,
+      active: (json['active'] as int?) == 1,
     );
   }
 
@@ -43,12 +48,14 @@ class Subject {
     String? name,
     double? basePricePerHour,
     String? icon,
+    bool? active,
   }) {
     return Subject(
       id: id ?? this.id,
       name: name ?? this.name,
       basePricePerHour: basePricePerHour ?? this.basePricePerHour,
       icon: icon ?? this.icon,
+      active: active ?? this.active,
     );
   }
 

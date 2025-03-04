@@ -51,12 +51,13 @@ CREATE TABLE ${tableSubjects}_temp (
   ${SubjectFields.id} TEXT PRIMARY KEY,
   ${SubjectFields.name} TEXT NOT NULL,
   ${SubjectFields.basePricePerHour} REAL NOT NULL,
-  ${SubjectFields.icon} TEXT NOT NULL
+  ${SubjectFields.icon} TEXT NOT NULL,
+  ${SubjectFields.active} INTEGER NOT NULL DEFAULT 1
 )''');
 
         // Copy data with converted IDs
         await txn.execute(
-          'INSERT INTO ${tableSubjects}_temp SELECT CAST(id AS TEXT) as id, name, basePricePerHour, icon FROM $tableSubjects',
+          'INSERT INTO ${tableSubjects}_temp SELECT CAST(id AS TEXT) as id, name, basePricePerHour, icon, 1 as active FROM $tableSubjects',
         );
 
         // Drop old table and rename new one
@@ -90,7 +91,8 @@ CREATE TABLE $tableSubjects (
   ${SubjectFields.id} $idType,
   ${SubjectFields.name} $textType,
   ${SubjectFields.basePricePerHour} $realType,
-  ${SubjectFields.icon} $textType
+  ${SubjectFields.icon} $textType,
+  ${SubjectFields.active} $integerType DEFAULT 1
 )
 ''');
 
@@ -153,9 +155,13 @@ CREATE TABLE $tableClasses (
   }
 
   // Subject methods
-  Future<List<Subject>> getSubjects() async {
+  Future<List<Subject>> getSubjects({bool includeArchived = false}) async {
     final db = await instance.database;
-    final result = await db.query(tableSubjects);
+    final query =
+        includeArchived
+            ? 'SELECT * FROM $tableSubjects'
+            : 'SELECT * FROM $tableSubjects WHERE ${SubjectFields.active} = 1';
+    final result = await db.rawQuery(query);
     return result.map((map) => Subject.fromJson(map)).toList();
   }
 
@@ -192,6 +198,26 @@ CREATE TABLE $tableClasses (
   Future<void> deleteSubject(String id) async {
     final db = await instance.database;
     await db.delete('subjects', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> archiveSubject(String id) async {
+    final db = await instance.database;
+    await db.update(
+      tableSubjects,
+      {SubjectFields.active: 0},
+      where: '${SubjectFields.id} = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> restoreSubject(String id) async {
+    final db = await instance.database;
+    await db.update(
+      tableSubjects,
+      {SubjectFields.active: 1},
+      where: '${SubjectFields.id} = ?',
+      whereArgs: [id],
+    );
   }
 
   // Class methods
